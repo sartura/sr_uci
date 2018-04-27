@@ -36,7 +36,7 @@ typedef struct ctx_s {
     sr_conn_ctx_t *startup_conn;
     sr_session_ctx_t *startup_sess;
     void *data; //private data
-	struct sr_uci_mapping *map;
+    struct sr_uci_mapping *map;
 } ctx_t;
 
 typedef int (*sr_callback) (ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, sr_notif_event_t, void *);
