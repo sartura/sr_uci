@@ -38,90 +38,98 @@
 
 int uci_del(ctx_t *ctx, const char *uci)
 {
-    int rc = UCI_OK;
+    int rc = SR_ERR_OK;
+    int uci_ret = UCI_OK;
     struct uci_ptr ptr = {};
 
-    uci_lookup_ptr(ctx->uctx, &ptr, (char *) uci, true);
-    UCI_CHECK_RET(rc, error, "uci_lookup_ptr %d, path %s", rc, uci);
+    uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, (char *) uci, true);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_lookup_ptr %d, path %s", rc, uci);
 
-    uci_delete(ctx->uctx, &ptr);
-    UCI_CHECK_RET(rc, error, "uci_set %d, path %s", rc, uci);
+    uci_ret = uci_delete(ctx->uctx, &ptr);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_set %d, path %s", rc, uci);
 
-    uci_save(ctx->uctx, ptr.p);
-    UCI_CHECK_RET(rc, error, "UCI save error %d, path %s", rc, uci);
+    uci_ret = uci_save(ctx->uctx, ptr.p);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "UCI save error %d, path %s", rc, uci);
 
-    uci_commit(ctx->uctx, &ptr.p, 1);
-    UCI_CHECK_RET(rc, error, "UCI commit error %d, path %s", rc, uci);
+    uci_ret = uci_commit(ctx->uctx, &ptr.p, 1);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "UCI commit error %d, path %s", rc, uci);
 
-error:
+cleanup:
 
+    return rc;
+}
 
 int set_uci_section(ctx_t *ctx, char *uci)
 {
-    int rc = UCI_OK;
+    int rc = SR_ERR_OK;
+    int uci_ret = UCI_OK;
     struct uci_ptr ptr = {0};
 
-    uci_lookup_ptr(ctx->uctx, &ptr, (char *) uci, true);
-    UCI_CHECK_RET(rc, error, "uci_lookup_ptr %d, path %s", rc, uci);
+    uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, (char *) uci, true);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_lookup_ptr %d, path %s", rc, uci);
 
-    uci_set(ctx->uctx, &ptr);
-    UCI_CHECK_RET(rc, error, "uci_set %d, path %s", rc, uci);
+    uci_ret = uci_set(ctx->uctx, &ptr);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_set %d, path %s", rc, uci);
 
-    uci_save(ctx->uctx, ptr.p);
-    UCI_CHECK_RET(rc, error, "UCI save error %d, path %s", rc, uci);
+    uci_ret = uci_save(ctx->uctx, ptr.p);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "UCI save error %d, path %s", rc, uci);
 
-    uci_commit(ctx->uctx, &ptr.p, 1);
-    UCI_CHECK_RET(rc, error, "UCI commit error %d, path %s", rc, uci);
+    uci_ret = uci_commit(ctx->uctx, &ptr.p, 1);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "UCI commit error %d, path %s", rc, uci);
 
-error:
+cleanup:
     return rc;
 }
 
 int get_uci_item(struct uci_context *uctx, char *ucipath, char **value)
 {
-    int rc = UCI_OK;
-    char path[MAX_UCI_PATH];
+    int rc = SR_ERR_OK;
+    int uci_ret = UCI_OK;
     struct uci_ptr ptr;
 
+    char *path = calloc(1, strlen(ucipath) + 1);
+    CHECK_NULL(path, &rc, cleanup, "calloc %s", ucipath);
     sprintf(path, "%s", ucipath);
 
-    rc = uci_lookup_ptr(uctx, &ptr, path, true);
-    UCI_CHECK_RET(rc, exit, "lookup_pointer %d %s", rc, path);
-
-    if (NULL == ptr.o) {
-        INF("Uci item %s not found", ucipath);
-        return UCI_ERR_NOTFOUND;
-    }
+    uci_ret = uci_lookup_ptr(uctx, &ptr, path, true);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "lookup_pointer %d %s", rc, path);
+    CHECK_NULL(ptr.o, &rc, cleanup, "Uci item %s not found", ucipath);
 
     strcpy(*value, ptr.o->v.string);
 
-exit:
+cleanup:
+    if (NULL != path) {
+        free(path);
+    }
     return rc;
 }
 
 int set_uci_item(struct uci_context *uctx, char *ucipath, char *value)
 {
-    int rc = UCI_OK;
+    int rc = SR_ERR_OK;
+    int uci_ret = UCI_OK;
     struct uci_ptr ptr;
-    char *set_path = calloc(1, MAX_UCI_PATH);
+    char *path = calloc(1, strlen(ucipath) + 1);
 
-    sprintf(set_path, "%s%s%s", ucipath, "=", value);
+    sprintf(path, "%s%s%s", ucipath, "=", value);
+    CHECK_NULL(path, &rc, cleanup, "calloc %s", ucipath);
 
-    rc = uci_lookup_ptr(uctx, &ptr, set_path, true);
-    UCI_CHECK_RET(rc, exit, "lookup_pointer %d %s", rc, set_path);
+    uci_ret = uci_lookup_ptr(uctx, &ptr, path, true);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "lookup_pointer %d %s", rc, path);
 
-    rc = uci_set(uctx, &ptr);
-    UCI_CHECK_RET(rc, exit, "uci_set %d %s", rc, set_path);
+    uci_ret = uci_set(uctx, &ptr);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_set %d %s", rc, path);
 
-    rc = uci_save(uctx, ptr.p);
-    UCI_CHECK_RET(rc, exit, "uci_save %d %s", rc, set_path);
+    uci_ret = uci_save(uctx, ptr.p);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_save %d %s", rc, path);
 
-    rc = uci_commit(uctx, &(ptr.p), false);
-    UCI_CHECK_RET(rc, exit, "uci_commit %d %s", rc, set_path);
+    uci_ret = uci_commit(uctx, &(ptr.p), false);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_commit %d %s", rc, path);
 
-exit:
-    free(set_path);
-
+cleanup:
+    if (NULL != path) {
+        free(path);
+    }
     return rc;
 }
 
@@ -157,19 +165,17 @@ int sysrepo_option_callback(ctx_t *ctx, sr_change_oper_t op, char *xpath, char *
     /* add/change leafs */
     if (SR_OP_CREATED == op || SR_OP_MODIFIED == op) {
         char *mem = sr_val_to_str(val);
-        CHECK_NULL(mem, &rc, error, "sr_print_val %s", sr_strerror(rc));
+        CHECK_NULL(mem, &rc, cleanup, "sr_print_val %s", sr_strerror(rc));
         rc = set_uci_item(ctx->uctx, ucipath, mem);
         free(mem);
-        UCI_CHECK_RET(rc, uci_error, "set_uci_item %x", rc);
+        CHECK_RET(rc, cleanup, "set_uci_item %x", rc);
     } else if (SR_OP_DELETED == op) {
         rc = uci_del(ctx, ucipath);
-        UCI_CHECK_RET(rc, uci_error, "uci_del %d", rc);
+        CHECK_RET(rc, cleanup, "uci_del %d", rc);
     }
 
-error:
+cleanup:
     return rc;
-uci_error:
-    return SR_ERR_INTERNAL;
 }
 
 int sysrepo_boolean_callback(ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
@@ -182,15 +188,14 @@ int sysrepo_boolean_callback(ctx_t *ctx, sr_change_oper_t op, char *xpath, char 
         } else {
             rc = set_uci_item(ctx->uctx, ucipath, "0");
         }
-        UCI_CHECK_RET(rc, uci_error, "set_uci_item %x", rc);
+        CHECK_RET(rc, cleanup, "set_uci_item %x", rc);
     } else if (SR_OP_DELETED == op) {
         rc = uci_del(ctx, ucipath);
-        UCI_CHECK_RET(rc, uci_error, "uci_del %d", rc);
+        CHECK_RET(rc, cleanup, "uci_del %d", rc);
     }
 
+cleanup:
     return rc;
-uci_error:
-    return SR_ERR_INTERNAL;
 }
 
 int sysrepo_section_callback(ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
@@ -200,30 +205,30 @@ int sysrepo_section_callback(ctx_t *ctx, sr_change_oper_t op, char *xpath, char 
     if (SR_OP_CREATED == op || SR_OP_MODIFIED == op) {
         sprintf(ucipath, "%s.%s=%s", ctx->config_file, key, "TODO");
         rc = set_uci_section(ctx, ucipath);
-        UCI_CHECK_RET(rc, uci_error, "set_uci_item %x", rc);
+        CHECK_RET(rc, cleanup, "set_uci_item %x", rc);
     } else if (SR_OP_DELETED == op) {
         rc = uci_del(ctx, ucipath);
-        UCI_CHECK_RET(rc, uci_error, "uci_del %d", rc);
+        CHECK_RET(rc, cleanup, "uci_del %d", rc);
     }
 
+cleanup:
     return rc;
-uci_error:
-    return SR_ERR_INTERNAL;
 }
 
 int sysrepo_list_callback(ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
     int rc = SR_ERR_OK;
+    int uci_ret = UCI_OK;
     size_t count = 0;
     sr_val_t *values = NULL;
     struct uci_ptr ptr = {};
     char set_path[XPATH_MAX_LEN] = {0};
 
-    rc = uci_lookup_ptr(ctx->uctx, &ptr, (char *) ucipath, true);
-    UCI_CHECK_RET(rc, uci_error, "uci_lookup_ptr %d, path %s", rc, ucipath);
+    uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, (char *) ucipath, true);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_lookup_ptr %d, path %s", rc, ucipath);
     if (NULL != ptr.o) {
         /* remove the UCI list first */
-        rc = uci_delete(ctx->uctx, &ptr);
-        UCI_CHECK_RET(rc, uci_error, "uci_delete %d, path %s", rc, ucipath);
+        uci_ret = uci_delete(ctx->uctx, &ptr);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_delete %d, path %s", rc, ucipath);
     }
 
     /* get all list instances */
@@ -233,17 +238,17 @@ int sysrepo_list_callback(ctx_t *ctx, sr_change_oper_t op, char *xpath, char *uc
     for (size_t i = 0; i<count; i++){
         sprintf(set_path, "%s%s%s", ucipath, "=", values[i].data.string_val);
 
-        rc = uci_lookup_ptr(ctx->uctx, &ptr, set_path, true);
-        UCI_CHECK_RET(rc, uci_error, "lookup_pointer %d %s", rc, set_path);
+        uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, set_path, true);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "lookup_pointer %d %s", rc, set_path);
 
-        rc = uci_add_list(ctx->uctx, &ptr);
-        UCI_CHECK_RET(rc, uci_error, "uci_set %d %s", rc, set_path);
+        uci_ret = uci_add_list(ctx->uctx, &ptr);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_set %d %s", rc, set_path);
 
-        rc = uci_save(ctx->uctx, ptr.p);
-        UCI_CHECK_RET(rc, uci_error, "uci_save %d %s", rc, set_path);
+        uci_ret = uci_save(ctx->uctx, ptr.p);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_save %d %s", rc, set_path);
 
-        rc = uci_commit(ctx->uctx, &(ptr.p), false);
-        UCI_CHECK_RET(rc, uci_error, "uci_commit %d %s", rc, set_path);
+        uci_ret = uci_commit(ctx->uctx, &(ptr.p), false);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_commit %d %s", rc, set_path);
     }
 
 cleanup:
@@ -251,31 +256,27 @@ cleanup:
         sr_free_values(values, count);
     }
     return rc;
-uci_error:
-    if (NULL != values && 0 != count) {
-        sr_free_values(values, count);
-    }
-    return SR_ERR_INTERNAL;
 }
 
 int sysrepo_list_callback_enable(ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
     int rc = SR_ERR_OK;
+    int uci_ret = UCI_OK;
     struct uci_ptr ptr = {};
 
     if (SR_OP_CREATED == op || SR_OP_MODIFIED == op) {
         if (false == val->data.bool_val) {
-            rc = uci_lookup_ptr(ctx->uctx, &ptr, (char *) ucipath, true);
-            UCI_CHECK_RET(rc, uci_error, "uci_lookup_ptr %d, path %s", rc, ucipath);
+            uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, (char *) ucipath, true);
+            UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_lookup_ptr %d, path %s", rc, ucipath);
             if (NULL != ptr.o) {
                 /* remove the UCI list first */
                 rc = uci_delete(ctx->uctx, &ptr);
-                UCI_CHECK_RET(rc, uci_error, "uci_delete %d, path %s", rc, ucipath);
+                UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_delete %d, path %s", rc, ucipath);
 
                 rc = uci_save(ctx->uctx, ptr.p);
-                UCI_CHECK_RET(rc, uci_error, "uci_save %d %s", rc, ucipath);
+                UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_save %d %s", rc, ucipath);
 
                 rc = uci_commit(ctx->uctx, &(ptr.p), false);
-                UCI_CHECK_RET(rc, uci_error, "uci_commit %d %s", rc, ucipath);
+                UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_commit %d %s", rc, ucipath);
             }
         } else {
             return sysrepo_list_callback(ctx, op, xpath, "voice_client.direct_dial.direct_dial", key, val); 
@@ -284,9 +285,8 @@ int sysrepo_list_callback_enable(ctx_t *ctx, sr_change_oper_t op, char *xpath, c
         //TODO
     }
 
+cleanup:
     return rc;
-uci_error:
-    return SR_ERR_INTERNAL;
 }
 
 void
@@ -350,32 +350,27 @@ cleanup:
 static int parse_uci_config_list(ctx_t *ctx)
 {
     int rc = SR_ERR_OK;
+    int uci_ret = UCI_OK;
     struct uci_option *o;
-    struct uci_element *el;
+    struct uci_element *el = NULL;
     struct uci_ptr ptr = {};
     char ucipath[] = "UCIPATH";
     char xpath[] = "XPATH";
 
-    rc = uci_lookup_ptr(ctx->uctx, &ptr, (char *) ucipath, true);
-    UCI_CHECK_RET(rc, uci_error, "uci_lookup_ptr %d, path %s", rc, ucipath);
-
-    if (NULL == ptr.o) {
-        goto uci_error;
-    }
+    uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, (char *) ucipath, true);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_lookup_ptr %d, path %s", rc, ucipath);
+    CHECK_NULL(ptr.o, &rc, cleanup, "ptr.o %s", ucipath);
 
     uci_foreach_element(&ptr.o->v.list, el) {
         o = uci_to_option(el);
-        if (NULL == o && NULL == o->e.name) {
-            goto uci_error;
-        }
+        CHECK_NULL(o, &rc, cleanup, "uci option %s", ucipath);
+        CHECK_NULL(o->e.name, &rc, cleanup, "uci option %s", ucipath);
         rc = sr_set_item_str(ctx->startup_sess, xpath, o->e.name, SR_EDIT_DEFAULT);
         CHECK_RET(rc, cleanup, "failed sr_set_item_str: %s", sr_strerror(rc));
     }
 
 cleanup:
     return rc;
-uci_error:
-    return SR_ERR_INTERNAL;
 }
 
 int sysrepo_to_uci(ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, sr_notif_event_t event)
@@ -416,7 +411,7 @@ error:
 
 static int init_sysrepo_data(ctx_t *ctx)
 {
-    struct uci_element *e;
+    struct uci_element *e = NULL;
     struct uci_section *s;
     int rc;
 

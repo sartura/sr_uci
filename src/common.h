@@ -84,18 +84,20 @@
 		}                                                                                                                                            \
 	} while (0)
 
-#define UCI_CHECK_RET_MSG(RET, LABEL, MSG)                                                                                                           \
+#define UCI_CHECK_RET_MSG(UCI_RET, SR_RET, LABEL, MSG)                                                                                               \
 	do {                                                                                                                                             \
-		if (UCI_OK != RET) {                                                                                                                         \
+		if (UCI_OK != UCI_RET) {                                                                                                                     \
 			ERR_MSG(MSG) SRP_LOG_ERR_MSG(MSG);                                                                                                       \
-			goto LABEL;                                                                                                                              \
+            *SR_RET = SR_ERR_INTERNAL;                                                                                                               \
+            goto LABEL;                                                                                                                              \
 		}                                                                                                                                            \
 	} while (0)
 
-#define UCI_CHECK_RET(RET, LABEL, MSG, ...)                                                                                                          \
+#define UCI_CHECK_RET(UCI_RET, SR_RET, LABEL, MSG, ...)                                                                                              \
 	do {                                                                                                                                             \
-		if (UCI_OK != RET) {                                                                                                                         \
+		if (UCI_OK != UCI_RET) {                                                                                                                     \
 			ERR(MSG, __VA_ARGS__) SRP_LOG_ERR(MSG, __VA_ARGS__);                                                                                     \
+            *SR_RET = SR_ERR_INTERNAL;                                                                                                               \
 			goto LABEL;                                                                                                                              \
 		}                                                                                                                                            \
 	} while (0)
