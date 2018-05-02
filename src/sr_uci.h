@@ -26,7 +26,7 @@
 
 struct sr_uci_mapping;
 
-typedef struct ctx_s {
+typedef struct sr_ctx_s {
     const char *yang_model;
     const char *config_file;
     struct uci_context *uctx;
@@ -37,29 +37,28 @@ typedef struct ctx_s {
     sr_session_ctx_t *startup_sess;
     void *data; //private data
     struct sr_uci_mapping *map;
-} ctx_t;
+} sr_ctx_t;
 
-typedef int (*sr_callback) (ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, sr_notif_event_t, void *);
-typedef int (*uci_callback) (ctx_t *, char *, char *, void *, sr_edit_flag_t, void *);
+typedef int (*sr_callback) (sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, sr_notif_event_t, void *);
+typedef int (*uci_callback) (sr_ctx_t *, char *, char *, void *, sr_edit_flag_t, void *);
 
 /* Configuration part of the plugin. */
 struct sr_uci_mapping {
     uci_callback uci_callback;
     sr_callback sr_callback;
-    char *default_value;
     char *ucipath;
     char *xpath;
 };
 
-int sync_datastores(ctx_t *ctx);
-int load_startup_datastore(ctx_t *ctx);
-int sysrepo_to_uci(ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, sr_notif_event_t event);
-int fill_state_data(ctx_t *ctx, char *xpath, sr_val_t **values, size_t *values_cnt);
+int sync_datastores(sr_ctx_t *ctx);
+int load_startup_datastore(sr_ctx_t *ctx);
+int sysrepo_to_uci(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, sr_notif_event_t event);
+int fill_state_data(sr_ctx_t *ctx, char *xpath, sr_val_t **values, size_t *values_cnt);
 
-typedef struct ubus_ctx_s {
-    ctx_t *ctx;
+typedef struct sr_values_s {
+    sr_ctx_t *ctx;
     sr_val_t **values;
     size_t *values_cnt;
-} ubus_ctx_t;
+} sr_values_t;
 
 #endif /* SR_UCI_H */

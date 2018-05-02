@@ -36,7 +36,7 @@
 #include "sr_uci.h"
 #include "common.h"
 
-int uci_del(ctx_t *ctx, const char *uci)
+int uci_del(sr_ctx_t *ctx, const char *uci)
 {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
@@ -59,7 +59,7 @@ cleanup:
     return rc;
 }
 
-int set_uci_section(ctx_t *ctx, char *uci)
+int set_uci_section(sr_ctx_t *ctx, char *uci)
 {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
@@ -87,15 +87,17 @@ int get_uci_item(struct uci_context *uctx, char *ucipath, char **value)
     int uci_ret = UCI_OK;
     struct uci_ptr ptr;
 
-    char *path = calloc(1, strlen(ucipath) + 1);
-    CHECK_NULL(path, &rc, cleanup, "calloc %s", ucipath);
+    char *path = malloc(sizeof(char) * (strlen(ucipath) + 1));
+    CHECK_NULL(path, &rc, cleanup, "malloc %s", ucipath);
     sprintf(path, "%s", ucipath);
 
     uci_ret = uci_lookup_ptr(uctx, &ptr, path, true);
     UCI_CHECK_RET(uci_ret, &rc, cleanup, "lookup_pointer %d %s", rc, path);
     CHECK_NULL(ptr.o, &rc, cleanup, "Uci item %s not found", ucipath);
+    CHECK_NULL(ptr.o->v.string, &rc, cleanup, "Uci item %s not found", ucipath);
 
-    strcpy(*value, ptr.o->v.string);
+    *value = strdup(ptr.o->v.string);
+    CHECK_NULL(*value, &rc, cleanup, "strdup failed for %s", ucipath);
 
 cleanup:
     if (NULL != path) {
@@ -109,10 +111,11 @@ int set_uci_item(struct uci_context *uctx, char *ucipath, char *value)
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
     struct uci_ptr ptr;
-    char *path = calloc(1, strlen(ucipath) + 1);
+
+    char *path = malloc(sizeof(char) * (strlen(ucipath) + strlen(value) + 2));
+    CHECK_NULL_MSG(path, &rc, cleanup, "malloc failed");
 
     sprintf(path, "%s%s%s", ucipath, "=", value);
-    CHECK_NULL(path, &rc, cleanup, "calloc %s", ucipath);
 
     uci_ret = uci_lookup_ptr(uctx, &ptr, path, true);
     UCI_CHECK_RET(uci_ret, &rc, cleanup, "lookup_pointer %d %s", rc, path);
@@ -131,6 +134,33 @@ cleanup:
         free(path);
     }
     return rc;
+}
+
+void del_path_key(char **value) {
+    if (NULL == *value) {
+        return;
+    }
+    free(*value);
+    *value = NULL;
+}
+
+char *new_path_key(char *path, char *key) {
+    int rc = SR_ERR_OK;
+    char *value = NULL;
+    int len = 0;
+
+    CHECK_NULL_MSG(path, &rc, cleanup, "missing parameter path");
+    CHECK_NULL_MSG(key, &rc, cleanup, "missing parameter key");
+
+    len = strlen(key) + strlen(path);
+
+    value = malloc(sizeof(char) * len);
+    CHECK_NULL_MSG(value, &rc, cleanup, "failed malloc");
+
+    snprintf(value, len, path, key);
+
+cleanup:
+    return value;
 }
 
 char *get_key_value(char *orig_xpath)
@@ -159,7 +189,7 @@ error:
     return key;
 }
 
-int sysrepo_option_callback(ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
+int sysrepo_option_callback(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
     int rc = SR_ERR_OK;
 
     /* add/change leafs */
@@ -178,7 +208,7 @@ cleanup:
     return rc;
 }
 
-int sysrepo_boolean_callback(ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
+int sysrepo_boolean_callback(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
     int rc = SR_ERR_OK;
 
     /* add/change leafs */
@@ -198,7 +228,7 @@ cleanup:
     return rc;
 }
 
-int sysrepo_section_callback(ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
+int sysrepo_section_callback(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
     int rc = SR_ERR_OK;
 
     /* add/change leafs */
@@ -215,7 +245,7 @@ cleanup:
     return rc;
 }
 
-int sysrepo_list_callback(ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
+int sysrepo_list_callback(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
     size_t count = 0;
@@ -258,7 +288,7 @@ cleanup:
     return rc;
 }
 
-int sysrepo_list_callback_enable(ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
+int sysrepo_list_callback_enable(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
     struct uci_ptr ptr = {};
@@ -290,7 +320,7 @@ cleanup:
 }
 
 void
-transform_orig_bool_value(ctx_t *ctx, char **uci_val)
+transform_orig_bool_value(sr_ctx_t *ctx, char **uci_val)
 {
     if (0 == strncmp("0", *uci_val, strlen(*uci_val))) {
         strcpy(*uci_val, "false");
@@ -316,38 +346,39 @@ bool string_eq(char *first, char *second)
     }
 }
 
-static int parse_uci_config(ctx_t *ctx,  char *key)
+static int parse_uci_config(sr_ctx_t *ctx,  char *key)
 {
-    char xpath[XPATH_MAX_LEN] = {0};
-    char ucipath[XPATH_MAX_LEN] = {0};
-    char *uci_val = calloc(1, 100);
+    char *xpath = NULL;
+    char *ucipath = NULL;
     int rc = SR_ERR_OK;
 
     const int n_mappings = ARR_SIZE(ctx->map);
     for (int i = 0; i < n_mappings; i++) {
-        snprintf(xpath, XPATH_MAX_LEN, ctx->map[i].xpath, key);
-        snprintf(ucipath, XPATH_MAX_LEN, ctx->map[i].ucipath, key);
+        char *uci_val = NULL;
+        xpath = new_path_key(ctx->map[i].xpath, key);
+        CHECK_NULL_MSG(xpath, &rc, cleanup, "failed to generate path");
+        ucipath = new_path_key(ctx->map[i].ucipath, key);
+        CHECK_NULL_MSG(xpath, &rc, cleanup, "failed to generate path");
         //TODO implement function callback
         rc = get_uci_item(ctx->uctx, ucipath, &uci_val);
         if (UCI_OK == rc) {
             INF("%s : %s", xpath, uci_val);
             rc = sr_set_item_str(ctx->startup_sess, xpath, uci_val, SR_EDIT_DEFAULT);
+            free(uci_val);
             CHECK_RET(rc, cleanup, "failed sr_set_item_str: %s", sr_strerror(rc));
         }
+        del_path_key(&xpath);
+        del_path_key(&ucipath);
     }
 
 cleanup:
-    if (SR_ERR_NOT_FOUND == rc) {
-        rc = SR_ERR_OK;
-    }
-    if (NULL != uci_val) {
-        free(uci_val);
-    }
+    del_path_key(&xpath);
+    del_path_key(&ucipath);
 
     return rc;
 }
 
-static int parse_uci_config_list(ctx_t *ctx)
+static int parse_uci_config_list(sr_ctx_t *ctx)
 {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
@@ -373,10 +404,10 @@ cleanup:
     return rc;
 }
 
-int sysrepo_to_uci(ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, sr_notif_event_t event)
+int sysrepo_to_uci(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, sr_notif_event_t event)
 {
-    char xpath[XPATH_MAX_LEN] = {0};
-    char ucipath[XPATH_MAX_LEN] = {0};
+    char *xpath = NULL;
+    char *ucipath = NULL;
     char *orig_xpath = NULL;
     char *key = NULL;
     int rc = SR_ERR_OK;
@@ -390,26 +421,33 @@ int sysrepo_to_uci(ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t 
     }
 
     key = get_key_value(orig_xpath);
+    CHECK_NULL(xpath, &rc, cleanup, "failed to get key from path %s", orig_xpath);
 
     /* add/change leafs */
     const int n_mappings = ARR_SIZE(ctx->map);
     for (int i = 0; i < n_mappings; i++) {
-        snprintf(xpath, XPATH_MAX_LEN, ctx->map[i].xpath, key);
-        snprintf(ucipath, XPATH_MAX_LEN, ctx->map[i].ucipath, key);
+        xpath = new_path_key(ctx->map[i].xpath, key);
+        CHECK_NULL_MSG(xpath, &rc, cleanup, "failed to generate path");
+        ucipath = new_path_key(ctx->map[i].ucipath, key);
+        CHECK_NULL_MSG(xpath, &rc, cleanup, "failed to generate path");
         if (string_eq(xpath, orig_xpath)) {
             rc = ctx->map[i].sr_callback(ctx, op, old_val, new_val, event, NULL);
-            CHECK_RET(rc, error, "failed sysrepo operation %s", sr_strerror(rc));
+            CHECK_RET(rc, cleanup, "failed sysrepo operation %s", sr_strerror(rc));
         }
+        del_path_key(&xpath);
+        del_path_key(&ucipath);
     }
 
-error:
+cleanup:
+    del_path_key(&xpath);
+    del_path_key(&ucipath);
     if (NULL != key) {
         free(key);
     }
     return rc;
 }
 
-static int init_sysrepo_data(ctx_t *ctx)
+static int init_sysrepo_data(sr_ctx_t *ctx)
 {
     struct uci_element *e = NULL;
     struct uci_section *s;
@@ -446,7 +484,7 @@ cleanup:
     return rc;
 }
 
-int sync_datastores(ctx_t *ctx)
+int sync_datastores(sr_ctx_t *ctx)
 {
     char startup_file[XPATH_MAX_LEN] = {0};
     int rc = SR_ERR_OK;
@@ -476,7 +514,7 @@ error:
     return rc;
 }
 
-int load_startup_datastore(ctx_t *ctx)
+int load_startup_datastore(sr_ctx_t *ctx)
 {
     sr_conn_ctx_t *connection = NULL;
     sr_session_ctx_t *session = NULL;
@@ -494,6 +532,7 @@ int load_startup_datastore(ctx_t *ctx)
     ctx->startup_conn = connection;
 
     return rc;
+
 cleanup:
     if (NULL != session) {
         sr_session_stop(session);
