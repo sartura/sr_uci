@@ -1,0 +1,27 @@
+#!/bin/sh
+
+case "$1" in
+	list)
+		  echo '{ "get-tx-pwr": {},"get-rx-pwr": {}, "get-voltage": {} , "get-current": {} }'
+	;;
+	call)
+		case "$2" in
+			get-current)
+				# return json object or an array
+          			echo '{
+                "current": "21.620 mA"
+				}'
+			;;
+			get-voltage)
+				  # return json object or an array
+          echo '{	"voltage": "3.2477 V"}'
+			    ;;
+      get-rx-pwr)
+          echo '{"rx-pwr": "0.6660 mW"}'
+          ;;
+      get-tx-pwr)
+          echo '{"tx-pwr": "0.2358 mW"}'
+          ;;
+		esac
+	;;
+esac

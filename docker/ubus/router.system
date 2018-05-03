@@ -1,0 +1,112 @@
+#!/bin/sh
+
+case "$1" in
+	list)
+		echo '{ "memory_bank": { }, "info": { }, "fs": {} }'
+	;;
+	call)
+		case "$2" in
+			memory_bank)
+				# return json object or an array
+				echo '{
+	"code": 0,
+	"memory_bank": "current",
+	"current_bank_firmware": "EG400-X-PANTERA-NEW-4.2.0ALPHA1-180418_0817",
+	"previous_bank_firmware": "EG400-X-PANTERA-NEW-4.2.0ALPHA1-180417_1237"
+
+}
+'
+			;;
+			info)
+				# return json object or an array
+				echo '{
+	"system": {
+		"name": "Inteno",
+		"hardware": "EG400",
+		"model": "EG400X",
+		"boardid": "EG400R0",
+		"firmware": "EG400-X-PANTERA-NEW-4.2.0ALPHA1-180418_0817",
+		"brcmver": "consumer",
+		"bspver": "consumer",
+		"filesystem": "UBIFS",
+		"socmod": "63139",
+		"socrev": "b0",
+		"cfever": "1.0.38-161.184-IOP1.4",
+		"kernel": "4.1.38",
+		"basemac": "00:22:07:6F:56:DA",
+		"serialno": "EG4024H179041692",
+		"localtime": 1524236690,
+		"date": "Fri Apr 20 17:04:50 2018",
+		"uptime": "2d 6h 47m 46s",
+		"procs": 132,
+		"cpu_per": 4
+	},
+	"memoryKB": {
+		"total": 488612,
+		"used": 223648,
+		"free": 264964,
+		"shared": 184,
+		"buffers": 0
+	},
+	"keys": {
+		"auth": "L1B1QZDH3BL7TMEY",
+		"des": "D5NY74MLWAFOJX4R",
+		"wpa": "TMGI3E3B4QTDUM"
+	},
+	"specs": {
+		"wifi": true,
+		"adsl": false,
+		"vdsl": false,
+		"voice": true,
+		"dect": true,
+		"usb": true,
+		"voice_ports": 6,
+		"eth_ports": 5
+	}
+}
+'
+			;;
+			fs)
+				# return json object or an array
+				echo '{
+    "filesystem": [
+		{
+			"name": "ubi0:rootfs_1",
+			"1kblocks": 110440,
+			"used": 21260,
+			"available": 89180,
+			"use_pre": 19,
+			"mounted_on": "\/rom"
+		},
+		{
+			"name": "devtmpfs",
+			"1kblocks": 62324,
+			"used": 0,
+			"available": 62324,
+			"use_pre": 0,
+			"mounted_on": "\/dev"
+		},
+		{
+			"name": "tmpfs",
+			"1kblocks": 62444,
+			"used": 180,
+			"available": 62264,
+			"use_pre": 0,
+			"mounted_on": "\/tmp"
+		},
+		{
+			"name": "overlayfs:\/overlay",
+			"1kblocks": 110440,
+			"used": 21260,
+			"available": 89180,
+			"use_pre": 19,
+			"mounted_on": "\/"
+		}
+	]
+
+}
+'
+			;;
+		esac
+	;;
+esac

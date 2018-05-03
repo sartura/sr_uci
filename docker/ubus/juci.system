@@ -1,0 +1,33 @@
+#!/bin/sh
+
+case "$1" in
+	list)
+		echo '{ "led_status" : {"name":"str"}, "defaultreset" : {}, "reboot" : {}, "zonelist" : {}, "passwd_entries" : {} }'
+	;;
+	call)
+		case "$2" in
+			led_status)
+				echo '
+{
+	"state": "ok",
+	"brightness": 100
+}
+' 
+			;;
+			reboot)
+				echo '
+{
+	"sucess": "reboot"
+}
+' 
+			;;
+			defaultreset)
+				echo '
+{
+	"sucess": "defaultreset"
+}
+' 
+			;;
+		esac
+	;;
+esac

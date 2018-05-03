@@ -1,0 +1,30 @@
+#!/bin/sh
+
+case "$1" in
+	list)
+		echo '{ "board": { } }'
+	;;
+	call)
+		case "$2" in
+			board)
+				# return json object or an array
+				echo '{
+	"kernel": "4.1.38",
+	"hostname": "Inteno",
+	"system": "ARMv7 Processor rev 1 (v7l)",
+	"model": "Broadcom BCM963138",
+	"board_name": "brcm,bcm963138",
+	"release": {
+		"distribution": "LEDE",
+		"version": "SNAPSHOT",
+		"revision": "r5974-0413e94",
+		"codename": "reboot",
+		"target": "iopsys-brcm63xx-arm\/generic",
+		"description": "LEDE Reboot SNAPSHOT r5974-0413e94"
+	}
+}
+'
+			;;
+		esac
+	;;
+esac

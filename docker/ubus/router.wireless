@@ -1,0 +1,26 @@
+#!/bin/sh
+
+case "$1" in
+    list)
+        echo '{ "status": {"vif":"wl0" } }'
+    ;;
+    call)
+        case "$2" in
+            status)
+          echo '{
+    "wldev": "wl0",
+    "radio": 1,
+    "ssid": "PANTERA-7666",
+    "bssid": "00:22:07:67:78:57",
+    "encryption": "WPA2 PSK",
+    "frequency": 5,
+    "channel": 100,
+    "bandwidth": 80,
+    "noise": -74,
+    "rate": 433
+}'
+
+            ;;
+        esac
+    ;;
+esac
