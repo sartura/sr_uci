@@ -34,7 +34,6 @@
 #include <json-c/json.h>
 
 #include "sr_uci.h"
-#include "common.h"
 
 int uci_del(sr_ctx_t *ctx, const char *uci)
 {
@@ -170,7 +169,7 @@ char *get_key_value(char *orig_xpath)
 
     node = sr_xpath_next_node(orig_xpath, &state);
     if (NULL == node) {
-        goto error;
+        goto cleanup;
     }
     while (true) {
         key = sr_xpath_next_key_name(NULL, &state);
@@ -184,9 +183,25 @@ char *get_key_value(char *orig_xpath)
         }
     }
 
-error:
+cleanup:
     sr_xpath_recover(&state);
     return key;
+}
+
+int uci_all_cb(sr_ctx_t *ctx, char *xpath, char *ucipath, sr_edit_flag_t flag, void *data) {
+    int rc = SR_ERR_OK;
+    char *uci_val = NULL;
+
+    rc = get_uci_item(ctx->uctx, ucipath, &uci_val);
+    if (UCI_OK == rc) {
+        INF("%s : %s", xpath, uci_val);
+        rc = sr_set_item_str(ctx->startup_sess, xpath, uci_val, flag);
+        free(uci_val);
+        CHECK_RET(rc, cleanup, "failed sr_set_item_str: %s", sr_strerror(rc));
+    }
+
+cleanup:
+    return rc;
 }
 
 int sysrepo_option_callback(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
@@ -208,7 +223,7 @@ cleanup:
     return rc;
 }
 
-int sysrepo_boolean_callback(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
+int sr_boolean_cb(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
     int rc = SR_ERR_OK;
 
     /* add/change leafs */
@@ -228,7 +243,7 @@ cleanup:
     return rc;
 }
 
-int sysrepo_section_callback(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
+int sr_section_cb(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
     int rc = SR_ERR_OK;
 
     /* add/change leafs */
@@ -245,13 +260,13 @@ cleanup:
     return rc;
 }
 
-int sysrepo_list_callback(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
+int sr_list_cb(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
     size_t count = 0;
     sr_val_t *values = NULL;
     struct uci_ptr ptr = {};
-    char set_path[XPATH_MAX_LEN] = {0};
+    char *path = NULL;
 
     uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, (char *) ucipath, true);
     UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_lookup_ptr %d, path %s", rc, ucipath);
@@ -266,29 +281,36 @@ int sysrepo_list_callback(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char 
     CHECK_RET(rc, cleanup, "failed sr_get_items: %s", sr_strerror(rc));
 
     for (size_t i = 0; i<count; i++){
-        sprintf(set_path, "%s%s%s", ucipath, "=", values[i].data.string_val);
+        int len = strlen (ucipath) + strlen(values[i].data.string_val) + 2;
+        char *path = malloc(sizeof(char) * len);
+        snprintf(path, len, "%s%s%s", ucipath, "=", values[i].data.string_val);
 
-        uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, set_path, true);
-        UCI_CHECK_RET(uci_ret, &rc, cleanup, "lookup_pointer %d %s", rc, set_path);
+        uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, path, true);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "lookup_pointer %d %s", rc, path);
 
         uci_ret = uci_add_list(ctx->uctx, &ptr);
-        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_set %d %s", rc, set_path);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_set %d %s", rc, path);
 
         uci_ret = uci_save(ctx->uctx, ptr.p);
-        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_save %d %s", rc, set_path);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_save %d %s", rc, path);
 
         uci_ret = uci_commit(ctx->uctx, &(ptr.p), false);
-        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_commit %d %s", rc, set_path);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_commit %d %s", rc, path);
+        free(path);
+        path = NULL;
     }
 
 cleanup:
     if (NULL != values && 0 != count) {
         sr_free_values(values, count);
     }
+    if (NULL == path) {
+        free(path);
+    }
     return rc;
 }
 
-int sysrepo_list_callback_enable(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
+int sr_list_enable_cb(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath, char *ucipath, char *key, sr_val_t *val) {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
     struct uci_ptr ptr = {};
@@ -309,7 +331,7 @@ int sysrepo_list_callback_enable(sr_ctx_t *ctx, sr_change_oper_t op, char *xpath
                 UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_commit %d %s", rc, ucipath);
             }
         } else {
-            return sysrepo_list_callback(ctx, op, xpath, "voice_client.direct_dial.direct_dial", key, val); 
+            return sr_list_cb(ctx, op, xpath, "voice_client.direct_dial.direct_dial", key, val); 
         }
     } else if (SR_OP_DELETED == op) {
         //TODO
@@ -319,8 +341,7 @@ cleanup:
     return rc;
 }
 
-void
-transform_orig_bool_value(sr_ctx_t *ctx, char **uci_val)
+void transform_orig_bool_value(sr_ctx_t *ctx, char **uci_val)
 {
     if (0 == strncmp("0", *uci_val, strlen(*uci_val))) {
         strcpy(*uci_val, "false");
@@ -354,19 +375,12 @@ static int parse_uci_config(sr_ctx_t *ctx,  char *key)
 
     const int n_mappings = ARR_SIZE(ctx->map);
     for (int i = 0; i < n_mappings; i++) {
-        char *uci_val = NULL;
         xpath = new_path_key(ctx->map[i].xpath, key);
         CHECK_NULL_MSG(xpath, &rc, cleanup, "failed to generate path");
         ucipath = new_path_key(ctx->map[i].ucipath, key);
         CHECK_NULL_MSG(xpath, &rc, cleanup, "failed to generate path");
-        //TODO implement function callback
-        rc = get_uci_item(ctx->uctx, ucipath, &uci_val);
-        if (UCI_OK == rc) {
-            INF("%s : %s", xpath, uci_val);
-            rc = sr_set_item_str(ctx->startup_sess, xpath, uci_val, SR_EDIT_DEFAULT);
-            free(uci_val);
-            CHECK_RET(rc, cleanup, "failed sr_set_item_str: %s", sr_strerror(rc));
-        }
+        rc = uci_all_cb(ctx, xpath, ucipath, SR_EDIT_DEFAULT, NULL);
+        CHECK_RET(rc, cleanup, "failed sr_set_item_str: %s", sr_strerror(rc));
         del_path_key(&xpath);
         del_path_key(&ucipath);
     }
@@ -462,11 +476,14 @@ static int init_sysrepo_data(sr_ctx_t *ctx)
     uci_foreach_element(&ctx->package->sections, e)
     {
         s = uci_to_section(e);
-        //TODO implement char array
-        if (string_eq(s->type, "TODO")) {
-            INF("key value is: %s", s->e.name)
-            rc = parse_uci_config(ctx, s->e.name);
-            CHECK_RET(rc, cleanup, "failed to add sysrepo data: %s", sr_strerror(rc));
+        const char **section= ctx->uci_sections;
+        while(*section != 0) {
+            if (string_eq(s->type, (char *) section)) {
+                INF("key value is: %s", s->e.name)
+                rc = parse_uci_config(ctx, s->e.name);
+                CHECK_RET(rc, cleanup, "failed to add sysrepo data: %s", sr_strerror(rc));
+            }
+            ++section;
         }
     }
 
@@ -486,13 +503,17 @@ cleanup:
 
 int sync_datastores(sr_ctx_t *ctx)
 {
-    char startup_file[XPATH_MAX_LEN] = {0};
+    char *startup_file = NULL;
     int rc = SR_ERR_OK;
     struct stat st;
 
     /* check if the startup datastore is empty
      * by checking the content of the file */
-    snprintf(startup_file, XPATH_MAX_LEN, "/etc/sysrepo/data/%s.startup", ctx->yang_model);
+    int len = strlen(ctx->yang_model) + 28;
+    startup_file = malloc(sizeof(char) * len);
+    CHECK_NULL_MSG(startup_file, &rc, cleanup, "malloc failed");
+
+    snprintf(startup_file, len, "/etc/sysrepo/data/%s.startup", ctx->yang_model);
 
     if (stat(startup_file, &st) != 0) {
         ERR("Could not open sysrepo file %s", startup_file);
@@ -503,15 +524,41 @@ int sync_datastores(sr_ctx_t *ctx)
         /* parse uci config */
         rc = init_sysrepo_data(ctx);
         INF_MSG("copy uci data to sysrepo");
-        CHECK_RET(rc, error, "failed to apply uci data to sysrepo: %s", sr_strerror(rc));
+        CHECK_RET(rc, cleanup, "failed to apply uci data to sysrepo: %s", sr_strerror(rc));
     } else {
         /* copy the sysrepo startup datastore to uci */
         INF_MSG("copy sysrepo data to uci");
-        CHECK_RET(rc, error, "failed to apply sysrepo startup data to snabb: %s", sr_strerror(rc));
+        CHECK_RET(rc, cleanup, "failed to apply sysrepo startup data to snabb: %s", sr_strerror(rc));
     }
 
-error:
+cleanup:
+    if (NULL != startup_file) {
+        free(startup_file);
+    }
     return rc;
+}
+
+void free_context(sr_ctx_t *ctx)
+{
+    if (NULL == ctx) {
+        return;
+    }
+    /* clean startup datastore */
+    if (NULL != ctx->startup_sess) {
+        sr_session_stop(ctx->startup_sess);
+    }
+    if (NULL != ctx->startup_conn) {
+        sr_disconnect(ctx->startup_conn);
+    }
+    if (NULL != ctx->sub) {
+        sr_unsubscribe(ctx->sess, ctx->sub);
+    }
+    if (NULL != ctx->uctx) {
+        uci_free_context(ctx->uctx);
+    }
+    free(ctx);
+
+    DBG_MSG("Context freed");
 }
 
 int load_startup_datastore(sr_ctx_t *ctx)

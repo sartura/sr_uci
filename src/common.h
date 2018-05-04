@@ -22,12 +22,6 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#define MAX_UCI_PATH 64
-
-#define XPATH_MAX_LEN 128
-
-#define ARR_SIZE(a) sizeof a / sizeof a[0]
-
 #include "sysrepo/plugins.h"
 
 #ifdef PLUGIN
