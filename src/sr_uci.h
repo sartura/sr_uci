@@ -25,8 +25,6 @@
 #include <sysrepo.h>
 #include "sysrepo/plugins.h"
 
-#define ARR_SIZE(a) sizeof a / sizeof a[0]
-
 #ifdef PLUGIN
 #define ERR(MSG, ...) SRP_LOG_ERR(MSG, ...)
 #define ERR_MSG(MSG) SRP_LOG_ERR_MSG(MSG)
@@ -99,8 +97,17 @@
 		}\
 	} while (0)
 
+#define UCI_CHECK_ITEM(VALUE, RET, LABEL, MSG, ...)\
+	do {\
+		if (NULL == VALUE) {\
+			*RET = SR_ERR_NOT_FOUND;\
+			ERR(MSG, __VA_ARGS__) SRP_LOG_ERR(MSG, __VA_ARGS__);\
+			goto LABEL;\
+		}\
+	} while (0)
 
-struct sr_uci_mapping;
+
+typedef struct sr_uci_mapping_s sr_uci_mapping_t;
 
 typedef struct sr_ctx_s {
     const char *yang_model;
@@ -111,24 +118,47 @@ typedef struct sr_ctx_s {
     sr_subscription_ctx_t *sub;
     sr_conn_ctx_t *startup_conn;
     sr_session_ctx_t *startup_sess;
+    sr_uci_mapping_t *map;
+    int map_size;
     void *data; //private data
-    struct sr_uci_mapping *map;
     const char *uci_sections[];
 } sr_ctx_t;
 
-typedef int (*sr_callback) (sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, sr_notif_event_t, void *);
+int uci_del(sr_ctx_t *, const char *);
+int set_uci_section(sr_ctx_t *, char *);
+int get_uci_item(struct uci_context *, char *, char **);
+int set_uci_item(struct uci_context *, char *, char *);
+
+typedef int (*sr_callback) (sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
 typedef int (*uci_callback) (sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
+/* additinonal check */
+typedef bool (*check_callback) (sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
 
 /* Configuration part of the plugin. */
-struct sr_uci_mapping {
-    uci_callback uci_callback;
-    sr_callback sr_callback;
+struct sr_uci_mapping_s {
+    sr_callback sr_cb;
+    uci_callback uci_cb;
+    check_callback check_cb;
     char *ucipath;
     char *xpath;
 };
 
+int sr_section_cb(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
+int sr_option_cb(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
+int sr_boolean_cb(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
+int sr_boolean_reverse_cb(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
+int sr_list_cb(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
+int sr_list_enable_cb(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
+
+int uci_section_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
+int uci_boolean_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
+int uci_boolean_reverse_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
+int uci_option_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
+
 int sync_datastores(sr_ctx_t *);
 int load_startup_datastore(sr_ctx_t *);
+void sr_uci_free_context(sr_ctx_t *);
+int sr_uci_init_data(sr_ctx_t *, const char *, const char *[]);
 int sysrepo_to_uci(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, sr_notif_event_t);
 int fill_state_data(sr_ctx_t *, char *, sr_val_t **, size_t *);
 
