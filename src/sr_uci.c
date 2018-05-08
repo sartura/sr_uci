@@ -213,6 +213,34 @@ cleanup:
     return rc;
 }
 
+int uci_list_cb(sr_ctx_t *ctx, char *xpath, char *ucipath, sr_edit_flag_t flag, void *data) {
+    int rc = SR_ERR_OK;
+    int uci_ret = UCI_OK;
+    struct uci_context *uci_ctx = NULL;
+    struct uci_element *e = NULL;
+    struct uci_ptr ptr;
+
+    uci_ctx = uci_alloc_context();
+    uci_ret = uci_lookup_ptr (uci_ctx, &ptr, ucipath, true);
+    UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_lookup_ptr %d, path %s", uci_ret, ucipath);
+
+    if (NULL == ptr.o || UCI_TYPE_LIST != ptr.o->type) {
+        ERR("ucipath %s does not have a list", ucipath);
+        goto cleanup;
+    }
+
+    uci_foreach_element(&ptr.o->v.list, e) {
+        rc = sr_set_item_str(ctx->startup_sess, xpath, e->name, flag);
+        CHECK_RET(rc, cleanup, "failed sr_set_item_str: %s", sr_strerror(rc));
+    }
+
+cleanup:
+    if (NULL != uci_ctx) {
+        uci_free_context (uci_ctx);
+    }
+    return rc;
+}
+
 int uci_boolean_cb(sr_ctx_t *ctx, char *xpath, char *ucipath, sr_edit_flag_t flag, void *data) {
     int rc = SR_ERR_OK;
     char *uci_val = NULL;

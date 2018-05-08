@@ -154,6 +154,7 @@ int uci_section_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
 int uci_boolean_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
 int uci_boolean_reverse_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
 int uci_option_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
+int uci_list_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
 
 int sync_datastores(sr_ctx_t *);
 int load_startup_datastore(sr_ctx_t *);
