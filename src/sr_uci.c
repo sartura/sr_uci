@@ -145,7 +145,11 @@ char *new_path_key(char *path, char *key) {
     int len = 0;
 
     CHECK_NULL_MSG(path, &rc, cleanup, "missing parameter path");
-    CHECK_NULL_MSG(key, &rc, cleanup, "missing parameter key");
+
+    /* if the xpath does not contain list elements, copy string */
+    if (NULL == key) {
+        return strdup(path);
+    }
 
     len = strlen(key) + strlen(path);
 
@@ -357,54 +361,51 @@ cleanup:
 int sr_list_cb(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, char *xpath, char *ucipath) {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
-    size_t count = 0;
-    sr_val_t *values = NULL;
     struct uci_ptr ptr = {};
-    char *path = NULL;
+    char *set_path = NULL;
 
-    uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, ucipath, true);
-    UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_lookup_ptr %d, path %s", uci_ret, ucipath);
-    if (NULL != ptr.o) {
-        /* remove the UCI list first */
-        uci_ret = uci_delete(ctx->uctx, &ptr);
-        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_delete %d, path %s", uci_ret, ucipath);
-    }
 
-    /* get all list instances */
-    if (SR_OP_CREATED == op || SR_OP_MODIFIED == op) {
-        rc = sr_get_items(ctx->sess, xpath, &values, &count);
-        CHECK_RET(rc, cleanup, "failed sr_get_items: %s", sr_strerror(rc));
-    } else {
-        rc = sr_get_items(ctx->sess, xpath, &values, &count);
-        CHECK_RET(rc, cleanup, "failed sr_get_items: %s", sr_strerror(rc));
-    }
+    if (SR_OP_DELETED == op || SR_OP_MODIFIED == op) {
+        int len = strlen(ucipath) + strlen(old_val->data.string_val) + 2;
+        set_path = malloc(sizeof(char) * len);
+        CHECK_NULL_MSG(set_path, &rc, cleanup, "malloc failed");
+        sprintf(set_path, "%s%s%s", ucipath, "=", old_val->data.string_val);
 
-    for (size_t i = 0; i<count; i++){
-        int len = strlen (ucipath) + strlen(values[i].data.string_val) + 2;
-        char *path = malloc(sizeof(char) * len);
-        snprintf(path, len, "%s%s%s", ucipath, "=", values[i].data.string_val);
+        uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, set_path, true);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "lookup_pointer %d %s", uci_ret, set_path);
 
-        uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, path, true);
-        UCI_CHECK_RET(uci_ret, &rc, cleanup, "lookup_pointer %d %s", uci_ret, path);
-
-        uci_ret = uci_add_list(ctx->uctx, &ptr);
-        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_set %d %s", uci_ret, path);
+        uci_ret = uci_del_list(ctx->uctx, &ptr);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_set %d %s", uci_ret, set_path);
 
         uci_ret = uci_save(ctx->uctx, ptr.p);
-        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_save %d %s", uci_ret, path);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_save %d %s", uci_ret, set_path);
 
         uci_ret = uci_commit(ctx->uctx, &(ptr.p), false);
-        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_commit %d %s", uci_ret, path);
-        free(path);
-        path = NULL;
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_commit %d %s", uci_ret, set_path);
+    }
+
+    if (SR_OP_CREATED == op || SR_OP_MODIFIED == op) {
+        int len = strlen(ucipath) + strlen(new_val->data.string_val) + 2;
+        set_path = malloc(sizeof(char) * len);
+        CHECK_NULL_MSG(set_path, &rc, cleanup, "malloc failed");
+        sprintf(set_path, "%s%s%s", ucipath, "=", new_val->data.string_val);
+
+        rc = uci_lookup_ptr(ctx->uctx, &ptr, set_path, true);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "lookup_pointer %d %s", uci_ret, set_path);
+
+        rc = uci_add_list(ctx->uctx, &ptr);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_set %d %s", uci_ret, set_path);
+
+        rc = uci_save(ctx->uctx, ptr.p);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_save %d %s", uci_ret, set_path);
+
+        rc = uci_commit(ctx->uctx, &(ptr.p), false);
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_commit %d %s", uci_ret, set_path);
     }
 
 cleanup:
-    if (NULL != values && 0 != count) {
-        sr_free_values(values, count);
-    }
-    if (NULL == path) {
-        free(path);
+    if (NULL != set_path) {
+        free(set_path);
     }
     return rc;
 }
@@ -510,7 +511,7 @@ int sysrepo_to_uci(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val
     }
 
     key = get_key_value(orig_xpath);
-    CHECK_NULL(xpath, &rc, cleanup, "failed to get key from path %s", orig_xpath);
+    //CHECK_NULL(xpath, &rc, cleanup, "failed to get key from path %s", orig_xpath);
 
     /* add/change leafs */
     for (int i = 0; i < ctx->map_size; i++) {
@@ -603,7 +604,7 @@ int sync_datastores(sr_ctx_t *ctx)
     } else {
         /* copy the sysrepo startup datastore to uci */
         INF_MSG("copy sysrepo data to uci");
-        CHECK_RET(rc, cleanup, "failed to apply sysrepo startup data to snabb: %s", sr_strerror(rc));
+        CHECK_RET(rc, cleanup, "failed to apply sysrepo startup data: %s", sr_strerror(rc));
     }
 
 cleanup:
