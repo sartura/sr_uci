@@ -539,12 +539,13 @@ int sr_uci_init_data(sr_ctx_t *ctx, const char *uci_config, const char *uci_sect
 {
     struct uci_element *e = NULL;
     struct uci_section *s;
-    int rc;
+    int uci_ret = UCI_OK;
+    int rc = SR_ERR_OK;
 
-    rc = uci_load(ctx->uctx, uci_config, &ctx->package);
-    if (rc != UCI_OK) {
-        fprintf(stderr, "No configuration (package): %s\n", uci_config);
-        goto cleanup;
+    uci_ret = uci_load(ctx->uctx, uci_config, &ctx->package);
+    /* skip check if duplicate */
+    if (UCI_ERR_DUPLICATE != uci_ret) {
+        UCI_CHECK_RET(uci_ret, &rc, cleanup, "No configuration (package) %s, uci_error %d", uci_config, uci_ret);
     }
 
     uci_foreach_element(&ctx->package->sections, e)
@@ -565,7 +566,7 @@ int sr_uci_init_data(sr_ctx_t *ctx, const char *uci_config, const char *uci_sect
     rc = sr_commit(ctx->startup_sess);
     CHECK_RET(rc, cleanup, "failed sr_commit: %s", sr_strerror(rc));
 
-    return SR_ERR_OK;
+    return rc;
 
 cleanup:
     if (ctx->uctx) {
