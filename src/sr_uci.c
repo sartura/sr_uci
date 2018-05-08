@@ -35,6 +35,7 @@
 
 #include "sr_uci.h"
 
+/* delete uci option or section */
 int uci_del(sr_ctx_t *ctx, const char *uci) {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
@@ -57,6 +58,7 @@ cleanup:
     return rc;
 }
 
+/* set uci section */
 int set_uci_section(sr_ctx_t *ctx, char *uci) {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
@@ -78,6 +80,7 @@ cleanup:
     return rc;
 }
 
+/* get uci option */
 int get_uci_item(struct uci_context *uctx, char *ucipath, char **value) {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
@@ -102,6 +105,7 @@ cleanup:
     return rc;
 }
 
+/* set uci option */
 int set_uci_item(struct uci_context *uctx, char *ucipath, char *value) {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
@@ -131,14 +135,7 @@ cleanup:
     return rc;
 }
 
-void del_path_key(char **value) {
-    if (NULL == *value) {
-        return;
-    }
-    free(*value);
-    *value = NULL;
-}
-
+/* insert key value into a xpath or ucipath with snprintf */
 char *new_path_key(char *path, char *key) {
     int rc = SR_ERR_OK;
     char *value = NULL;
@@ -162,6 +159,16 @@ cleanup:
     return value;
 }
 
+/* free the memory from new_path_key and set to NULL */
+void del_path_key(char **value) {
+    if (NULL == *value) {
+        return;
+    }
+    free(*value);
+    *value = NULL;
+}
+
+/* get the first key value from a sysrepo XPATH */
 char *get_key_value(char *orig_xpath)
 {
     char *key = NULL, *node = NULL;
@@ -188,6 +195,7 @@ cleanup:
     return key;
 }
 
+/* check if two strings are equal */
 bool string_eq(char *first, char *second)
 {
     if (0 == strcmp(first, second) && (strlen(first) == strlen(second))) {
@@ -197,11 +205,33 @@ bool string_eq(char *first, char *second)
     }
 }
 
+/* Per convention, boolean options may have one of the values '0', 'no',
+ * 'off', 'false' or 'disabled' to specify a false value or '1' , 'yes',
+ * 'on', 'true' or 'enabled' to specify a true value. */
+bool uci_true_value(char *uci_val)
+{
+    if (string_eq("1", uci_val)) {
+        return true;
+    } else if (string_eq("yes", uci_val)) {
+        return true;
+    } else if (string_eq("on", uci_val)) {
+        return true;
+    } else if (string_eq("true", uci_val)) {
+        return true;
+    } else if (string_eq("enabled", uci_val)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* manage uci sections */
 int uci_section_cb(sr_ctx_t *ctx, char *xpath, char *ucipath, sr_edit_flag_t flag, void *data)
 {
     return SR_ERR_OK;
 }
 
+/* manage uci options */
 int uci_option_cb(sr_ctx_t *ctx, char *xpath, char *ucipath, sr_edit_flag_t flag, void *data) {
     int rc = SR_ERR_OK;
     char *uci_val = NULL;
@@ -217,6 +247,7 @@ cleanup:
     return rc;
 }
 
+/* manage uci list's */
 int uci_list_cb(sr_ctx_t *ctx, char *xpath, char *ucipath, sr_edit_flag_t flag, void *data) {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
@@ -245,13 +276,14 @@ cleanup:
     return rc;
 }
 
+/* manage uci boolean values */
 int uci_boolean_cb(sr_ctx_t *ctx, char *xpath, char *ucipath, sr_edit_flag_t flag, void *data) {
     int rc = SR_ERR_OK;
     char *uci_val = NULL;
 
     rc = get_uci_item(ctx->uctx, ucipath, &uci_val);
     if (UCI_OK == rc) {
-        if (string_eq(uci_val, "1") || string_eq(uci_val, "true") || string_eq(uci_val, "on") || string_eq(uci_val, "yes")) {
+        if (true == uci_true_value(uci_val)) {
             rc = sr_set_item_str(ctx->startup_sess, xpath, "true", flag);
         } else {
             rc = sr_set_item_str(ctx->startup_sess, xpath, "false", flag);
@@ -264,13 +296,14 @@ cleanup:
     return rc;
 }
 
+/* manage uci boolean values but reverse them in sysrepo, used for ignore options */
 int uci_boolean_reverse_cb(sr_ctx_t *ctx, char *xpath, char *ucipath, sr_edit_flag_t flag, void *data) {
     int rc = SR_ERR_OK;
     char *uci_val = NULL;
 
     rc = get_uci_item(ctx->uctx, ucipath, &uci_val);
     if (UCI_OK == rc) {
-        if (string_eq(uci_val, "1") || string_eq(uci_val, "true") || string_eq(uci_val, "on") || string_eq(uci_val, "yes")) {
+        if (true == uci_true_value(uci_val)) {
             rc = sr_set_item_str(ctx->startup_sess, xpath, "false", flag);
         } else {
             rc = sr_set_item_str(ctx->startup_sess, xpath, "true", flag);
@@ -283,6 +316,7 @@ cleanup:
     return rc;
 }
 
+/* sysrepo callback for writing leaf's to uci */
 int sr_option_cb(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, char *xpath, char *ucipath) {
     int rc = SR_ERR_OK;
 
@@ -302,6 +336,7 @@ cleanup:
     return rc;
 }
 
+/* sysrepo callback for writing bool leaf's to uci, but reverse */
 int sr_boolean_reverse_cb(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, char *xpath, char *ucipath) {
     int rc = SR_ERR_OK;
 
@@ -322,6 +357,7 @@ cleanup:
     return rc;
 }
 
+/* sysrepo callback for writing bool leaf's to uci */
 int sr_boolean_cb(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, char *xpath, char *ucipath) {
     int rc = SR_ERR_OK;
 
@@ -342,6 +378,7 @@ cleanup:
     return rc;
 }
 
+/* sysrepo callback for writing containers/groupings to uci */
 int sr_section_cb(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, char *xpath, char *ucipath) {
     int rc = SR_ERR_OK;
 
@@ -358,6 +395,7 @@ cleanup:
     return rc;
 }
 
+/* sysrepo callback for writing leaf-lists to uci, every list element is directly add/deleted in uci */
 int sr_list_cb(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, char *xpath, char *ucipath) {
     int rc = SR_ERR_OK;
     int uci_ret = UCI_OK;
@@ -410,54 +448,7 @@ cleanup:
     return rc;
 }
 
-int sr_list_enable_cb(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, char *xpath, char *ucipath) {
-    int rc = SR_ERR_OK;
-    int uci_ret = UCI_OK;
-    struct uci_ptr ptr = {};
-
-    if (SR_OP_CREATED == op || SR_OP_MODIFIED == op) {
-        if (false == new_val->data.bool_val) {
-            uci_ret = uci_lookup_ptr(ctx->uctx, &ptr, ucipath, true);
-            UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_lookup_ptr %d, path %s", uci_ret, ucipath);
-            if (NULL != ptr.o) {
-                /* remove the UCI list first */
-                uci_ret = uci_delete(ctx->uctx, &ptr);
-                UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_delete %d, path %s", uci_ret, ucipath);
-
-                uci_ret = uci_save(ctx->uctx, ptr.p);
-                UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_save %d %s", uci_ret, ucipath);
-
-                uci_ret = uci_commit(ctx->uctx, &(ptr.p), false);
-                UCI_CHECK_RET(uci_ret, &rc, cleanup, "uci_commit %d %s", uci_ret, ucipath);
-            }
-        } else {
-            return sr_list_cb(ctx, op, old_val, new_val, xpath, ucipath); 
-        }
-    } else if (SR_OP_DELETED == op) {
-        //TODO
-    }
-
-cleanup:
-    return rc;
-}
-
-void transform_orig_bool_value(sr_ctx_t *ctx, char **uci_val)
-{
-    if (0 == strncmp("0", *uci_val, strlen(*uci_val))) {
-        strcpy(*uci_val, "false");
-    } else if (0 == strncmp("off", *uci_val, strlen(*uci_val))) {
-        strcpy(*uci_val, "false");
-    } else if (0 == strncmp("no", *uci_val, strlen(*uci_val))) {
-        strcpy(*uci_val, "false");
-    } else if (0 == strncmp("1", *uci_val, strlen(*uci_val))) {
-        strcpy(*uci_val, "true");
-    } else if (0 == strncmp("on", *uci_val, strlen(*uci_val))) {
-        strcpy(*uci_val, "true");
-    } else if (0 == strncmp("yes", *uci_val, strlen(*uci_val))) {
-        strcpy(*uci_val, "true");
-    }
-}
-
+/* parse uci config file and load it into sysrepo */
 static int parse_uci_config(sr_ctx_t *ctx,  char *key)
 {
     char *xpath = NULL;
@@ -494,6 +485,7 @@ cleanup:
     return rc;
 }
 
+/* sysrepo callback used on every change request */
 int sysrepo_to_uci(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val, sr_notif_event_t event)
 {
     char *xpath = NULL;
@@ -511,7 +503,6 @@ int sysrepo_to_uci(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val
     }
 
     key = get_key_value(orig_xpath);
-    //CHECK_NULL(xpath, &rc, cleanup, "failed to get key from path %s", orig_xpath);
 
     /* add/change leafs */
     for (int i = 0; i < ctx->map_size; i++) {
@@ -536,6 +527,7 @@ cleanup:
     return rc;
 }
 
+/* parse uci config file for uci_sections and use their key value */
 int sr_uci_init_data(sr_ctx_t *ctx, const char *uci_config, const char *uci_sections[])
 {
     struct uci_element *e = NULL;
@@ -577,6 +569,10 @@ cleanup:
     return rc;
 }
 
+/* sync sysrepo with uci,
+ * in case of first boot, parse uci config file and load it into sysrepo,
+ * if sysrepo already has some data, skip this step
+ */
 int sync_datastores(sr_ctx_t *ctx)
 {
     char *startup_file = NULL;
@@ -614,6 +610,7 @@ cleanup:
     return rc;
 }
 
+/* free sr_ctx_t */
 void sr_uci_free_context(sr_ctx_t *ctx)
 {
     if (NULL == ctx) {
@@ -641,6 +638,8 @@ void sr_uci_free_context(sr_ctx_t *ctx)
     DBG_MSG("Context freed");
 }
 
+/* load startup datastore, usually changes from running datastore
+ * are saved into startup also */
 int load_startup_datastore(sr_ctx_t *ctx)
 {
     sr_conn_ctx_t *connection = NULL;

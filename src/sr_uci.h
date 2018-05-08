@@ -143,12 +143,16 @@ struct sr_uci_mapping_s {
     char *xpath;
 };
 
+/* sysrepo callback for containers/groupings */
 int sr_section_cb(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
+/* sysrepo callback for leaf's */
 int sr_option_cb(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
+/* sysrepo callback for boolean values */
 int sr_boolean_cb(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
+/* sysrepo callback for inverse boolean values, true in sysrepo is false in UCI */
 int sr_boolean_reverse_cb(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
+/* sysrepo callback for list's */
 int sr_list_cb(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
-int sr_list_enable_cb(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, char *, char *);
 
 int uci_section_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
 int uci_boolean_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
