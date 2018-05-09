@@ -234,10 +234,11 @@ int uci_section_cb(sr_ctx_t *ctx, char *xpath, char *ucipath, sr_edit_flag_t fla
 /* manage uci options */
 int uci_option_cb(sr_ctx_t *ctx, char *xpath, char *ucipath, sr_edit_flag_t flag, void *data) {
     int rc = SR_ERR_OK;
+    int uci_ret = UCI_OK;
     char *uci_val = NULL;
 
-    rc = get_uci_item(ctx->uctx, ucipath, &uci_val);
-    if (UCI_OK == rc) {
+    uci_ret = get_uci_item(ctx->uctx, ucipath, &uci_val);
+    if (UCI_OK == uci_ret) {
         rc = sr_set_item_str(ctx->startup_sess, xpath, uci_val, flag);
         free(uci_val);
         CHECK_RET(rc, cleanup, "failed sr_set_item_str: %s", sr_strerror(rc));
@@ -279,10 +280,11 @@ cleanup:
 /* manage uci boolean values */
 int uci_boolean_cb(sr_ctx_t *ctx, char *xpath, char *ucipath, sr_edit_flag_t flag, void *data) {
     int rc = SR_ERR_OK;
+    int uci_ret = UCI_OK;
     char *uci_val = NULL;
 
-    rc = get_uci_item(ctx->uctx, ucipath, &uci_val);
-    if (UCI_OK == rc) {
+    uci_ret = get_uci_item(ctx->uctx, ucipath, &uci_val);
+    if (UCI_OK == uci_ret) {
         if (true == uci_true_value(uci_val)) {
             rc = sr_set_item_str(ctx->startup_sess, xpath, "true", flag);
         } else {
@@ -299,10 +301,11 @@ cleanup:
 /* manage uci boolean values but reverse them in sysrepo, used for ignore options */
 int uci_boolean_reverse_cb(sr_ctx_t *ctx, char *xpath, char *ucipath, sr_edit_flag_t flag, void *data) {
     int rc = SR_ERR_OK;
+    int uci_ret = UCI_OK;
     char *uci_val = NULL;
 
-    rc = get_uci_item(ctx->uctx, ucipath, &uci_val);
-    if (UCI_OK == rc) {
+    uci_ret = get_uci_item(ctx->uctx, ucipath, &uci_val);
+    if (UCI_OK == uci_ret) {
         if (true == uci_true_value(uci_val)) {
             rc = sr_set_item_str(ctx->startup_sess, xpath, "false", flag);
         } else {
