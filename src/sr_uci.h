@@ -138,7 +138,6 @@ typedef bool (*check_callback) (sr_ctx_t *, char *, char *, sr_edit_flag_t, void
 struct sr_uci_mapping_s {
     sr_callback sr_cb;
     uci_callback uci_cb;
-    check_callback check_cb;
     char *ucipath;
     char *xpath;
 };

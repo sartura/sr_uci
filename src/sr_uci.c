@@ -464,12 +464,6 @@ static int parse_uci_config(sr_ctx_t *ctx,  char *key)
         ucipath = new_path_key(ctx->map[i].ucipath, key);
         CHECK_NULL_MSG(xpath, &rc, cleanup, "failed to generate path");
 
-        /* call check callback if exists*/
-        if (NULL != ctx->map[i].check_cb) {
-            if (false == ctx->map[i].check_cb(ctx, xpath, ucipath, SR_EDIT_DEFAULT, key)) {
-                goto cleanup;
-            }
-        }
         rc = ctx->map[i].uci_cb(ctx, xpath, ucipath, SR_EDIT_DEFAULT, NULL);
         /* if not found skip check */
         if (SR_ERR_NOT_FOUND != rc) {
