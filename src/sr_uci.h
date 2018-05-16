@@ -25,6 +25,8 @@
 #include <sysrepo.h>
 #include "sysrepo/plugins.h"
 
+#include "uci.h"
+
 #ifdef PLUGIN
 #define ERR(MSG, ...) SRP_LOG_ERR(MSG, ...)
 #define ERR_MSG(MSG) SRP_LOG_ERR_MSG(MSG)
@@ -106,6 +108,25 @@
 		}\
 	} while (0)
 
+#define UBUS_CHECK_RET_MSG(RET, RC, LABEL, MSG)\
+	do {\
+		if (UBUS_STATUS_OK != RET) {\
+			*RC = SR_ERR_INTERNAL;\
+			ERR_MSG(MSG) SRP_LOG_ERR_MSG(MSG);\
+			goto LABEL;\
+		}\
+	} while (0)
+
+#define UBUS_CHECK_RET(RET, RC, LABEL, MSG, ...)\
+	do {\
+		if (UBUS_STATUS_OK != RET) {\
+			*RC = SR_ERR_INTERNAL;\
+			ERR(MSG, __VA_ARGS__) SRP_LOG_ERR(MSG, __VA_ARGS__);\
+			goto LABEL;\
+		}\
+	} while (0)
+
+void commit_uci_file(char *);
 
 typedef struct sr_uci_mapping_s sr_uci_mapping_t;
 
@@ -158,6 +179,24 @@ int uci_boolean_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
 int uci_boolean_reverse_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
 int uci_option_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
 int uci_list_cb(sr_ctx_t *, char *, char *, sr_edit_flag_t, void *);
+
+/* list of sr_val_t values */
+typedef struct sr_value_node_s {
+    struct list_head head;
+    sr_val_t value;
+} sr_value_node_t;
+
+/* turn json object to sr_val_t for state data */
+int ubus_string_to_sr(struct list_head *, struct json_object *, char *, char *);
+/* turn json object to sr_val_t for state data */
+int ubus_uint8_to_sr(struct list_head *, struct json_object *, char *, char *);
+
+/* calculate list size for struct value_node */
+size_t sr_value_node_size(struct list_head *);
+/* clean all nodes from the list */
+void sr_value_node_free(struct list_head *);
+/* copy node's from to list to sr_val_t */
+int sr_value_node_copy(struct list_head *, sr_val_t **, size_t *);
 
 int sync_datastores(sr_ctx_t *);
 int load_startup_datastore(sr_ctx_t *);

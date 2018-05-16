@@ -35,6 +35,46 @@
 
 #include "sr_uci.h"
 
+void commit_uci_file(char *file_name) {
+    pid_t pid = fork();
+    if (0 == pid) {
+        struct blob_buf buf = {0};
+        struct json_object *p = NULL;
+        int rc = SR_ERR_OK;
+        uint32_t id = 0;
+        int u_rc = UBUS_STATUS_OK;
+
+        struct ubus_context *u_ctx = ubus_connect(NULL);
+        CHECK_NULL_MSG(u_ctx, &rc, cleanup, "could not connect to ubus");
+
+        blob_buf_init(&buf, 0);
+        u_rc = ubus_lookup_id(u_ctx, "uci", &id);
+        UBUS_CHECK_RET(u_rc, &rc, cleanup, "ubus [%d]: no object uci", u_rc);
+
+        p = json_object_new_object();
+        CHECK_NULL_MSG(p, &rc, cleanup, "json_object_new_object: failed");
+        json_object_object_add(p, "config", json_object_new_string(file_name));
+
+        const char *json_data = json_object_get_string(p);
+        blobmsg_add_json_from_string(&buf, json_data);
+
+        u_rc = ubus_invoke(u_ctx, id, "commit", buf.head, NULL, NULL, 1000);
+        UBUS_CHECK_RET(u_rc, &rc, cleanup, "ubus [%d]: no object commit", u_rc);
+
+    cleanup:
+        if (NULL != p) {
+            json_object_put(p);
+        }
+        if (NULL != u_ctx) {
+            ubus_free(u_ctx);
+            blob_buf_free(&buf);
+        }
+        exit(127);
+    } else {
+        waitpid(pid, 0, 0);
+    }
+}
+
 /* delete uci option or section */
 int uci_del(sr_ctx_t *ctx, const char *uci) {
     int rc = SR_ERR_OK;
@@ -447,6 +487,159 @@ int sr_list_cb(sr_ctx_t *ctx, sr_change_oper_t op, sr_val_t *old_val, sr_val_t *
 cleanup:
     if (NULL != set_path) {
         free(set_path);
+    }
+    return rc;
+}
+
+static int sr_dup_val_data(sr_val_t *dest, const sr_val_t *source) {
+    int rc = SR_ERR_OK;
+
+    switch (source->type) {
+        case SR_BINARY_T:
+            rc = sr_val_set_str_data(dest, source->type, source->data.binary_val);
+            break;
+        case SR_BITS_T:
+            rc = sr_val_set_str_data(dest, source->type, source->data.bits_val);
+            break;
+        case SR_ENUM_T:
+            rc = sr_val_set_str_data(dest, source->type, source->data.enum_val);
+            break;
+        case SR_IDENTITYREF_T:
+            rc = sr_val_set_str_data(dest, source->type, source->data.identityref_val);
+            break;
+        case SR_INSTANCEID_T:
+            rc = sr_val_set_str_data(dest, source->type, source->data.instanceid_val);
+            break;
+        case SR_STRING_T:
+            rc = sr_val_set_str_data(dest, source->type, source->data.string_val);
+            break;
+        case SR_BOOL_T:
+        case SR_DECIMAL64_T:
+        case SR_INT8_T:
+        case SR_INT16_T:
+        case SR_INT32_T:
+        case SR_INT64_T:
+        case SR_UINT8_T:
+        case SR_UINT16_T:
+        case SR_UINT32_T:
+        case SR_UINT64_T:
+        case SR_TREE_ITERATOR_T:
+            dest->data = source->data;
+            dest->type = source->type;
+            break;
+        default:
+            dest->type = source->type;
+            break;
+    }
+
+    sr_val_set_xpath(dest, source->xpath);
+    return rc;
+}
+
+size_t sr_value_node_size(struct list_head *list) {
+    size_t current_size = 0;
+    sr_value_node_t *tmp = NULL;
+
+    list_for_each_entry(tmp, list, head) {
+        current_size += 1;
+    }
+
+    return current_size;
+}
+
+void sr_value_node_free(struct list_head *list) {
+    sr_value_node_t *tmp = NULL, *q = NULL;
+
+    list_for_each_entry_safe(tmp, q, list, head) {
+        list_del(&tmp->head);
+        free(tmp);
+    }
+    return;
+}
+
+int sr_value_node_copy(struct list_head *list, sr_val_t **values, size_t *values_cnt) {
+    size_t cnt = sr_value_node_size(list);
+    sr_value_node_t *tmp, *q;
+    int rc = SR_ERR_OK;
+    size_t j = 0;
+
+    *values = NULL;
+    *values_cnt = 0;
+
+    rc = sr_new_values(cnt, values);
+    CHECK_RET_MSG(rc, cleanup, "sr_new_values: failed");
+
+    list_for_each_entry_safe(tmp, q, list, head) {
+        rc = sr_dup_val_data(&(*values)[j], &tmp->value);
+        CHECK_RET(rc, cleanup, "Couldn't copy value: %s", sr_strerror(rc));
+        j++;
+    }
+    *values_cnt = cnt;
+
+cleanup:
+    /* in case of error, clean list and sr_values */
+    if (SR_ERR_OK != rc) {
+        if (NULL != values) {
+            sr_free_values(*values, cnt);
+        }
+        *values = NULL;
+        *values_cnt = 0;
+    }
+
+    return rc;
+}
+
+int ubus_string_to_sr(struct list_head *list, struct json_object *top, char *ubus_obj_name, char *xpath) {
+    const char *jobj_string = NULL;
+    struct json_object *jobj = NULL;
+    sr_value_node_t *list_value = NULL;
+    int rc = SR_ERR_OK;
+
+    list_value = calloc(1, sizeof *list_value);
+    CHECK_NULL_MSG(list_value, &rc, cleanup, "calloc: failed");
+
+    json_object_object_get_ex(top, ubus_obj_name, &jobj);
+    CHECK_NULL(jobj, &rc, cleanup, "json_object_object_get_ex: failed on %s", json_object_get_string(jobj));
+
+    jobj_string = json_object_get_string(jobj);
+    CHECK_NULL_MSG(jobj_string, &rc, cleanup, "json_object_get_string: failed");
+
+    list_value->value.xpath = xpath;
+    list_value->value.type = SR_STRING_T;
+    list_value->value.data.string_val= (char *) jobj_string;
+    list_add(&list_value->head, list);
+
+    return rc;
+cleanup:
+    if (NULL != list_value) {
+        free(list_value);
+    }
+    return rc;
+}
+
+int ubus_uint8_to_sr(struct list_head *list, struct json_object *top, char *ubus_obj_name, char *xpath) {
+    uint8_t jobj_int = 0;
+    struct json_object *jobj = NULL;
+    sr_value_node_t *list_value = NULL;
+    int rc = SR_ERR_OK;
+
+    list_value = calloc(1, sizeof *list_value);
+    CHECK_NULL_MSG(list_value, &rc, cleanup, "calloc: failed");
+
+    json_object_object_get_ex(top, ubus_obj_name, &jobj);
+    CHECK_NULL_MSG(jobj, &rc, cleanup, "json_object_object_get_ex: failed");
+
+    jobj_int = (uint8_t) json_object_get_int(jobj);
+
+    list_value->value.xpath = xpath;
+    list_value->value.type = SR_UINT8_T;
+    list_value->value.data.uint8_val = jobj_int;
+    list_add(&list_value->head, list);
+
+    return rc;
+cleanup:
+    if (NULL != list_value) {
+        free(list_value);
     }
     return rc;
 }
