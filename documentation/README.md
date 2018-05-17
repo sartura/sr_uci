@@ -69,7 +69,7 @@ uci commit
 
 ## ubus
 ```
-dhcp "ipv6leases
+dhcp ipv6leases
 router.network leases
 ```
 
