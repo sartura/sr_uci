@@ -1,5 +1,14 @@
+local yang_model = "ietf-interfaces"
+
 local table_sr_uci = {
-    ucipath={"network","ipaddr"}, xpath="/ietf-interfaces:interfaces/interface[name='%s']/ietf-ip:ipv4/address[ip='%s']/ip"
+    {ucipath={"network","mtu"}, xpath="/ietf-interfaces:interfaces/interface[name='%s']/ietf-ip:ipv4/mtu"},
+    {ucipath={"network","mtu"}, xpath="/ietf-interfaces:interfaces/interface[name='%s']/ietf-ip:ipv6/mtu"},
+    {ucipath={"network","enabled"}, xpath="/ietf-interfaces:interfaces/interface[name='%s']/ietf-ip:ipv4/enabled"},
+    {ucipath={"network","enabled"}, xpath="/ietf-interfaces:interfaces/interface[name='%s']/ietf-ip:ipv6/enabled"},
+    {ucipath={"network","ip4prefixlen"}, xpath="/ietf-interfaces:interfaces/interface[name='%s']/ietf-ip:ipv4/address[ip='%s']/prefix-length"},
+    {ucipath={"network","ip6prefixlen"}, xpath="/ietf-interfaces:interfaces/interface[name='%s']/ietf-ip:ipv6/address[ip='%s']/prefix-length"},
+    {ucipath={"network","netmask"}, xpath="/ietf-interfaces:interfaces/interface[name='%s']/ietf-ip:ipv4/address[ip='%s']/netmask"},
+    {ucipath={"network","type"}, xpath="/ietf-interfaces:interfaces/interface[name='%s']/type"}
 }
 
 local function dump_table(tbl, indent)
@@ -16,8 +25,6 @@ local function dump_table(tbl, indent)
     end
   end
 end
-
-local yang_model = "ietf-interfaces"
 
 local sr = require("libsysrepoLua")
 
@@ -97,23 +104,48 @@ local function module_change_cb(sess, module_name, event, private_ctx)
     return tonumber(sr.SR_ERR_OK)
 end
 
+local function uci_option_cb(ctx, xpath, ucipath)
+    -- set the default type
+    if "type" == ucipath[3] then
+        ctx["startup_sess"]:set_item_str(xpath, "iana-if-type:ethernetCsmacd", sr.SR_EDIT_DEFAULT)
+        return
+    end
+    local uci_ret = ctx["uctx"]:get(ucipath[1], ucipath[2], ucipath[3])
+    if nil ~= uci_ret then
+        ctx["startup_sess"]:set_item_str(xpath, uci_ret, sr.SR_EDIT_DEFAULT)
+    end
+end
+
+local function parse_uci_config(ctx, key)
+
+    for _, v in pairs(ctx["map"]) do
+        local ucipath = {v["ucipath"][1], key, v["ucipath"][2]}
+        local ipaddr = ctx["uctx"]:get(ucipath[1], key, "ipaddr")
+        if nil ~= ipaddr then
+            local xpath = string.format(v["xpath"],key,ipaddr)
+            uci_option_cb(ctx, xpath, ucipath)
+        end
+    end
+end
+
 local function sr_uci_init_data(ctx, config_file, uci_sections)
     local rc = sr.SR_ERR_OK
     local uci = require("uci")
 
     local uctx = uci.cursor()
+    ctx["uctx"] = uctx
 
     local get = uctx.get_all(config_file)
 
-    for k, v in pairs(get) do
-        if v[".type"] == uci_sections then
-            io.write("match\n")
-        end
-        print(k, v[".type"])
-        if nil ~= v["ipaddr"] then
-        io.write(config_file,".",k,".ipaddr=",v["ipaddr"],"\n")
+    for _, v in pairs(get) do
+        for _, v2 in pairs(uci_sections) do
+            if v[".type"] == v2 then
+                parse_uci_config(ctx, v[".name"])
+            end
         end
     end
+
+    ctx["startup_sess"]:commit()
 
     return rc
 end
@@ -132,7 +164,7 @@ local function sync_datastores(ctx)
         rc = sr_uci_init_data(ctx, ctx["config_file"], ctx["uci_sections"])
     else
         io.write("copy sysrepo data to uci\n")
-        rc = sr_uci_init_data(ctx, ctx["config_file"], ctx["uci_sections"])
+        rc = sr.SR_ERR_OK
     end
 
     return rc
@@ -159,7 +191,7 @@ local function sr_plugin_init_cb(session)
     ctx["sess"] = session
     ctx["sub"] = sr.Subscribe(session)
     ctx["config_file"] = "network"
-    ctx["uci_sections"] = "interface"
+    ctx["uci_sections"] = {"interface"}
     ctx["map"] = table_sr_uci
 
     rc = load_startup_datastore(ctx)
