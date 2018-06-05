@@ -25,7 +25,10 @@
 #include <sysrepo.h>
 #include "sysrepo/plugins.h"
 
-#include "uci.h"
+#include <libubus.h>
+#include <libubox/blobmsg.h>
+#include <libubox/blobmsg_json.h>
+#include <json-c/json.h>
 
 #ifdef PLUGIN
 #define ERR(MSG, ...) SRP_LOG_ERR(MSG, ...)
