@@ -110,6 +110,24 @@ RUN \
       make -j2 && \
       make install
 
+# install python2 sysrepo language bindings
+RUN apt-get install -y python-dev
+RUN \
+      cd /opt/dev/sysrepo/build && \
+      make clean && \
+      cmake -DCMAKE_INSTALL_PREFIX=/usr -DGEN_PYTHON_VERSION=2 .. && \
+      make -j2 && \
+      make install
+
+# install lua5.1 sysrepo language bindings
+RUN apt-get install -y lua5.1-dev
+RUN \
+      cd /opt/dev/sysrepo/build && \
+      make clean && \
+      cmake -DCMAKE_INSTALL_PREFIX=/usr -DGEN_LUA_VERSION=5.1 .. && \
+      make -j2 && \
+      make install
+
 # debug tools
 RUN \
       apt-get update && apt-get install -y \
@@ -120,9 +138,9 @@ RUN \
 RUN \
        apt-get update && apt-get install -y \
        libjson0 \
-	   libjson0-dev \
-	   lua5.1-dev \
-	   lua5.1 \
+       libjson0-dev \
+       lua5.1-dev \
+       lua5.1 \
        libcurl4-openssl-dev
 
 # ubox
@@ -130,59 +148,60 @@ RUN \
       cd /opt/dev && \
       git clone  git://git.openwrt.org/project/libubox.git && \
       cd libubox && mkdir build && cd build && \
-	  git checkout fd57eea9f37e447814afbf934db626288aac23c4 && \
-	  cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" .. && \
-	  make -j2 && \
-	  make install
+      git checkout fd57eea9f37e447814afbf934db626288aac23c4 && \
+      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" .. && \
+      make -j2 && \
+      make install
 
 # uci
 RUN \
       cd /opt/dev && \
-	  git clone git://nbd.name/uci.git && \
-	  cd uci && \
-	  cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" -DBUILD_LUA=OFF . && \
-	  make -j2 && \
-	  make install
+      git clone git://nbd.name/uci.git && \
+      cd uci && \
+      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" -DBUILD_LUA=ON . && \
+      make -j2 && \
+      make install
 
 # ubus
 RUN \
       cd /opt/dev && \
       git clone https://git.openwrt.org/project/ubus.git && \
       cd ubus && \
-	  cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" -DBUILD_LUA=OFF -DBUILD_EXAMPLES=OFF . && \
-	  make -j2 && \
-	  make install
+      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" -DBUILD_LUA=ON -DBUILD_EXAMPLES=OFF . && \
+      make -j2 && \
+      make install
 
 # rpcd
 RUN \
       cd /opt/dev && \
       git clone https://git.openwrt.org/project/rpcd.git && \
       cd rpcd && \
-	  cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" -DIWINFO_SUPPORT=NO . && \
-	  make -j2 && \
-	  make install && \
-	  mkdir /usr/lib/rpcd && \
-	  cp file.so /usr/lib/rpcd
+      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" -DIWINFO_SUPPORT=NO . && \
+      make -j2 && \
+      make install && \
+      mkdir /usr/lib/rpcd && \
+      cp file.so /usr/lib/rpcd
 
 # sr_uci
 RUN \
       cd /opt/dev && \
-	  git clone https://github.com/sartura/sr_uci.git && \
-	  cd sr_uci && mkdir build && cd build && \
+      git clone https://github.com/sartura/sr_uci.git && \
+      cd sr_uci && mkdir build && cd build && \
       git checkout devel && \
-	  cmake .. && \
-	  make -j2
+      cmake .. && \
+      make -j2 && \
+      make install
 
 # dhcp plugin
 RUN \
       cd /opt/dev && \
-	  git clone https://github.com/sartura/dhcp.git && \
-	  cd dhcp && mkdir build && cd build && \
+      git clone https://github.com/sartura/dhcp.git && \
+      cd dhcp && mkdir build && cd build && \
       git checkout devel && \
-	  cmake -DPLUGIN=ON .. && \
-	  make -j2 && \
+      cmake -DPLUGIN=ON .. && \
+      make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-	  sysrepoctl -i -g ../yang/terastream-dhcp@2017-12-07.yang
+      sysrepoctl -i -g ../yang/terastream-dhcp@2017-12-07.yang
 
 COPY uci/dhcp /etc/config/dhcp
 
@@ -201,13 +220,13 @@ RUN echo '#!/bin/sh' > /etc/init.d/odhcpd && chmod +x /etc/init.d/odhcpd
 # provisioning plugin
 RUN \
       cd /opt/dev && \
-	  git clone https://github.com/sartura/provisioning-plugin.git && \
+      git clone https://github.com/sartura/provisioning-plugin.git && \
       cd provisioning-plugin && git checkout devel && mkdir build && cd build && \
-	  git checkout devel && \
-	  cmake -DPLUGIN=ON .. && \
-	  make -j2 && \
+      git checkout devel && \
+      cmake -DPLUGIN=ON .. && \
+      make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-	  sysrepoctl -i -g ../yang/terastream-provisioning@2018-04-26.yang
+      sysrepoctl -i -g ../yang/terastream-provisioning@2018-05-14.yang
 
 COPY ubus/router.system /usr/libexec/rpcd/router.system
 RUN chmod +x /usr/libexec/rpcd/router.system
@@ -222,7 +241,7 @@ RUN \
       git clone https://github.com/sartura/network-plugin.git && \
       cd network-plugin && mkdir build && cd build && \
       git checkout devel && \
-	  cmake -DPLUGIN=ON .. && \
+      cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
       sysrepoctl -i -g ../yang/iana-if-type@2014-05-08.yang && \
@@ -252,14 +271,14 @@ RUN chmod +x /usr/libexec/rpcd/sfp.ddm
 # firmware plugin
 RUN \
       cd /opt/dev && \
-	  git clone https://github.com/sartura/firmware-plugin.git && \
-	  cd firmware-plugin && mkdir build && cd build && \
-	  git checkout devel && \
-	  cmake -DPLUGIN=ON .. && \
-	  make -j2 && \
+      git clone https://github.com/sartura/firmware-plugin.git && \
+      cd firmware-plugin && mkdir build && cd build && \
+      git checkout devel && \
+      cmake -DPLUGIN=ON .. && \
+      make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-	  sysrepoctl -i -g ../yang/terastream-software@2017-11-01.yang -s /etc/sysrepo/yang && \
-	  sysrepoctl -e software-credentials-password -m terastream-software
+      sysrepoctl -i -g ../yang/terastream-software@2017-11-01.yang -s /etc/sysrepo/yang && \
+      sysrepoctl -e software-credentials-password -m terastream-software
 
 # ubus call juci.system
 COPY ubus/juci.system /usr/libexec/rpcd/juci.system
@@ -277,12 +296,12 @@ run chmod +x /usr/libexec/rpcd/router.system
 # sip plugin
 RUN \
       cd /opt/dev && \
-	  git clone https://github.com/sartura/sip-plugin.git && \
-	  cd sip-plugin && mkdir build && cd build && \
-	  cmake -DPLUGIN=ON .. && \
-	  make -j2 && \
+      git clone https://github.com/sartura/sip-plugin.git && \
+      cd sip-plugin && mkdir build && cd build && \
+      cmake -DPLUGIN=ON .. && \
+      make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-	  sysrepoctl -i -g ../yang/terastream-sip@2017-08-09.yang
+      sysrepoctl -i -g ../yang/terastream-sip@2017-08-09.yang
 
 COPY uci/voice_client /etc/config/voice_client
 
@@ -297,11 +316,11 @@ RUN echo '#!/bin/sh' > /etc/init.d/asterisk && chmod +x /etc/init.d/asterisk
 
 # wireless plugin
 RUN \
-      cd /opt/dev && echo "test" && \
+      cd /opt/dev && \
       git clone https://github.com/sartura/wireless-plugin.git && \
       cd wireless-plugin && mkdir build && cd build && \
       git checkout devel && \
-	  cmake -DPLUGIN=ON .. && \
+      cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
       sysrepoctl -i -g ../yang/terastream-wireless@2017-08-08.yang && \
