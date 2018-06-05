@@ -339,6 +339,18 @@ RUN chmod +x /usr/libexec/rpcd/router.wireless
 COPY ubus/network.device /usr/libexec/rpcd/network.device
 RUN chmod +x /usr/libexec/rpcd/network.device
 
+# test plugin
+RUN \
+      cd /opt/dev && \
+      git clone https://github.com/sartura/test-plugin.git && \
+      cd test-plugin && mkdir build && cd build && \
+      git checkout master && \
+      cmake -DPLUGIN=ON .. && \
+      make -j2 && \
+      cp sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
+      ls ../yang && \
+      sysrepoctl -i -g ../yang/test-plugin@2018-02-20.yang
+
 ENV EDITOR vim
 EXPOSE 830
 
