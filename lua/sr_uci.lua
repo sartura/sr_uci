@@ -1,4 +1,5 @@
 local yang_model = "ietf-interfaces"
+local g_ctx = {}
 
 local table_sr_uci = {
     {ucipath={"network","mtu"}, xpath="/ietf-interfaces:interfaces/interface[name='%s']/ietf-ip:ipv4/mtu"},
@@ -69,6 +70,75 @@ local function print_current_config(sess, module_name)
 
 end
 
+local function get_key_value(orig_xpath)
+    local key
+    local state = sr.Xpath_Ctx()
+    local node = state:next_node(orig_xpath)
+    if nil == node then return nil end
+    repeat
+        local ret_key = state:next_key_name(nil)
+        if ret_key ~= nil then key = state:next_key_value(nil) end
+        if ret_key ~= nil then
+            node = nil
+        else
+            node = state:next_node(nil)
+        end
+    until node == nil
+    state:recover()
+    return key
+end
+
+local function get_second_key_value(orig_xpath)
+    local key
+    local keys = 0
+    local state = sr.Xpath_Ctx()
+    local node = state:next_node(orig_xpath)
+    if nil == node then return nil end
+    repeat
+        local ret_key = state:next_key_name(nil)
+        if ret_key ~= nil then keys = keys + 1 end
+        if keys == 2 then key = state:next_key_value(nil) end
+        if keys >= 2 then
+            node = nil
+        else
+            node = state:next_node(nil)
+        end
+    until node == nil
+    state:recover()
+    return key
+end
+
+local function sr_option_cb(ctx, op, old_val, new_val, ucipath)
+
+    if sr.SR_OP_CREATED == op or sr.SR_OP_MODIFIED == op then
+        ctx["uctx"]:set(ucipath[1],ucipath[2],ucipath[3],new_val:val_to_string())
+    else
+        ctx["uctx"]:delete(ucipath[1],ucipath[2],ucipath[3])
+    end
+    ctx["uctx"]:commit(ucipath[1])
+end
+
+local function sysrepo_to_uci(ctx, op, old_val, new_val, event)
+    local orig_xpath
+    if sr.SR_OP_CREATED == op or sr.SR_OP_MODIFIED == op then
+        orig_xpath = new_val:xpath()
+    else
+        orig_xpath = old_val:xpath()
+    end
+
+    local key = get_key_value(orig_xpath)
+    local second_key = get_second_key_value(orig_xpath)
+
+    for _, v in pairs(ctx["map"]) do
+        local ucipath = {v["ucipath"][1], key, v["ucipath"][2]}
+        local xpath = string.format(v["xpath"],key,second_key)
+        if xpath == orig_xpath then
+            sr_option_cb(ctx, op, old_val, new_val, ucipath)
+        end
+    end
+
+end
+
 -- Function to be called for subscribed client of given session whenever configuration changes.
 local function module_change_cb(sess, module_name, event, private_ctx)
     io.write("\n\n ========== CONFIG HAS CHANGED, CURRENT RUNNING CONFIG: ==========\n\n")
@@ -88,9 +158,10 @@ local function module_change_cb(sess, module_name, event, private_ctx)
             local change = sess:get_change_next(it)
             if (change == nil) then break end
             print_change(change:oper(), change:old_val(), change:new_val())
-	end
+            sysrepo_to_uci(g_ctx, change:oper(), change:old_val(), change:new_val(), event)
+	    end
 
-	io.write("\n\n ========== END OF CHANGES =======================================\n\n")
+	    io.write("\n\n ========== END OF CHANGES =======================================\n\n")
 
         collectgarbage()
     end
@@ -130,11 +201,6 @@ end
 
 local function sr_uci_init_data(ctx, config_file, uci_sections)
     local rc = sr.SR_ERR_OK
-    local uci = require("uci")
-
-    local uctx = uci.cursor()
-    ctx["uctx"] = uctx
-
     local get = uctx.get_all(config_file)
 
     for _, v in pairs(get) do
@@ -152,7 +218,11 @@ end
 
 local function sync_datastores(ctx)
     local startup_file =  "/etc/sysrepo/data/"..ctx["yang_model"]..".startup"
+    local uci = require("uci")
     local rc
+
+    local uctx = uci.cursor()
+    ctx["uctx"] = uctx
 
     local lines = {}
     for line in io.lines(startup_file) do
@@ -186,7 +256,7 @@ end
 
 local function sr_plugin_init_cb(session)
     local rc
-    local ctx = {}
+    local ctx = g_ctx
     ctx["yang_model"] = yang_model
     ctx["sess"] = session
     ctx["sub"] = sr.Subscribe(session)
