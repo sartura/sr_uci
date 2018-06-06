@@ -19,6 +19,8 @@
 -- limitations under the License.
 --]]
 
+local sr = require("libsysrepoLua")
+
 local yang_model = "ietf-interfaces"
 local g_ctx = {}
 
@@ -32,23 +34,6 @@ local table_sr_uci = {
     {ucipath={"network","netmask"}, xpath="/ietf-interfaces:interfaces/interface[name='%s']/ietf-ip:ipv4/address[ip='%s']/netmask"},
     {ucipath={"network","type"}, xpath="/ietf-interfaces:interfaces/interface[name='%s']/type"}
 }
-
-local function dump_table(tbl, indent)
-  if not indent then indent = 0 end
-  for k, v in pairs(tbl) do
-    local formatting = string.rep("  ", indent) .. k .. ": "
-    if type(v) == "table" then
-      print(formatting)
-      dump_table(v, indent+1)
-    elseif type(v) == 'boolean' then
-      print(formatting .. tostring(v))
-    else
-      print(formatting .. v)
-    end
-  end
-end
-
-local sr = require("libsysrepoLua")
 
 -- Helper function for printing changes given operation, old and new value.
 local function print_change(op, old_val, new_val)
@@ -222,7 +207,7 @@ end
 
 local function sr_uci_init_data(ctx, config_file, uci_sections)
     local rc = sr.SR_ERR_OK
-    local get = uctx.get_all(config_file)
+    local get = ctx["uctx"].get_all(config_file)
 
     for _, v in pairs(get) do
         for _, v2 in pairs(uci_sections) do
