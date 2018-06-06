@@ -46,7 +46,7 @@ WORKDIR /opt/dev
 RUN \
       git clone https://github.com/CESNET/libyang.git && \
       cd libyang && mkdir build && cd build && \
-      cmake -DCMAKE_BUILD_TYPE:String="Debug" -DENABLE_BUILD_TESTS=OFF .. && \
+      cmake -DCMAKE_BUILD_TYPE:String="Release" -DENABLE_BUILD_TESTS=OFF .. && \
       make -j2 && \
       make install && \
       ldconfig
@@ -64,7 +64,7 @@ RUN \
 RUN \
       git clone https://github.com/sysrepo/sysrepo.git && \
       cd sysrepo && mkdir build && cd build && \
-      cmake -DCMAKE_BUILD_TYPE:String="Debug" -DENABLE_TESTS=OFF -DREPOSITORY_LOC:PATH=/etc/sysrepo -DUSE_AVL_LIB:BOOL=FALSE  .. && \
+      cmake -DCMAKE_BUILD_TYPE:String="Release" -DENABLE_TESTS=OFF -DREPOSITORY_LOC:PATH=/etc/sysrepo -DUSE_AVL_LIB:BOOL=FALSE  .. && \
       make -j2 && \
       make install && \
       ldconfig
@@ -82,7 +82,7 @@ RUN \
 RUN \
       git clone https://github.com/CESNET/libnetconf2.git && \
       cd libnetconf2 && mkdir build && cd build && \
-      cmake -DCMAKE_BUILD_TYPE:String="Debug" -DENABLE_BUILD_TESTS=OFF .. && \
+      cmake -DCMAKE_BUILD_TYPE:String="Release" -DENABLE_BUILD_TESTS=OFF .. && \
       make -j2 && \
       make install && \
       ldconfig
@@ -93,7 +93,7 @@ RUN \
       git clone https://github.com/CESNET/Netopeer2.git && \
       cd Netopeer2 && \
       cd keystored && mkdir build && cd build && \
-      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
+      cmake -DCMAKE_BUILD_TYPE:String="Release" .. && \
       make -j2 && \
       make install && \
       ldconfig
@@ -102,11 +102,11 @@ RUN \
 RUN \
       cd /opt/dev && \
       cd Netopeer2/server && mkdir build && cd build && \
-      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
+      cmake -DCMAKE_BUILD_TYPE:String="Release" .. && \
       make -j2 && \
       make install && \
       cd ../../cli && mkdir build && cd build && \
-      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
+      cmake -DCMAKE_BUILD_TYPE:String="Release" .. && \
       make -j2 && \
       make install
 
@@ -149,7 +149,7 @@ RUN \
       git clone  git://git.openwrt.org/project/libubox.git && \
       cd libubox && mkdir build && cd build && \
       git checkout fd57eea9f37e447814afbf934db626288aac23c4 && \
-      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" .. && \
+      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Release" .. && \
       make -j2 && \
       make install
 
@@ -158,7 +158,7 @@ RUN \
       cd /opt/dev && \
       git clone git://nbd.name/uci.git && \
       cd uci && \
-      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" -DBUILD_LUA=ON . && \
+      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Release" -DBUILD_LUA=ON . && \
       make -j2 && \
       make install
 
@@ -167,7 +167,7 @@ RUN \
       cd /opt/dev && \
       git clone https://git.openwrt.org/project/ubus.git && \
       cd ubus && \
-      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" -DBUILD_LUA=ON -DBUILD_EXAMPLES=OFF . && \
+      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Release" -DBUILD_LUA=ON -DBUILD_EXAMPLES=OFF . && \
       make -j2 && \
       make install
 
@@ -176,7 +176,7 @@ RUN \
       cd /opt/dev && \
       git clone https://git.openwrt.org/project/rpcd.git && \
       cd rpcd && \
-      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" -DIWINFO_SUPPORT=NO . && \
+      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Release" -DIWINFO_SUPPORT=NO . && \
       make -j2 && \
       make install && \
       mkdir /usr/lib/rpcd && \

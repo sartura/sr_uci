@@ -4,12 +4,14 @@ docker for SIP Sysrepo plugin.
 
 ```
 $ docker build -t sysrepo/sysrepo-netopeer2:iop -f Dockerfile .
+$ docker build -t sysrepo/sysrepo-netopeer2:iop_devel -f Dockerfile.devel .
 ```
 
 ## build dockerfile without cache
 
 ```
 $ docker build --no-cache -t sysrepo/sysrepo-netopeer2:iop -f Dockerfile .
+$ docker build --no-cache -t sysrepo/sysrepo-netopeer2:iop_devel -f Dockerfile.devel .
 ```
 
 ## run dockerfile with supervisor
