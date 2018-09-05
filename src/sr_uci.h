@@ -208,6 +208,7 @@ int sr_uci_init_data(sr_ctx_t *, const char *, const char *[]);
 int sysrepo_to_uci(sr_ctx_t *, sr_change_oper_t, sr_val_t *, sr_val_t *, sr_notif_event_t);
 int fill_state_data(sr_ctx_t *, char *, sr_val_t **, size_t *);
 char *get_key_value(char *);
+char *get_n_key_value(char *, int);
 char *new_path_key(char *, char *);
 void del_path_key(char **);
 

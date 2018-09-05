@@ -235,6 +235,38 @@ cleanup:
     return key;
 }
 
+/* get the n-th (0 is first) key value from a sysrepo XPATH */
+char *get_n_key_value(char *orig_xpath, int n)
+{
+    char *key = NULL, *node = NULL;
+    sr_xpath_ctx_t state = {0, 0, 0, 0};
+    int counter = 0;
+
+    node = sr_xpath_next_node(orig_xpath, &state);
+    if (NULL == node) {
+        goto cleanup;
+    }
+    while (true) {
+        key = sr_xpath_next_key_name(NULL, &state);
+        if (NULL != key) {
+            if (counter++ != n) {
+                continue;
+            }
+
+            key = strdup(sr_xpath_next_key_value(NULL, &state));
+            break;
+        }
+        node = sr_xpath_next_node(NULL, &state);
+        if (NULL == node) {
+            break;
+        }
+    }
+
+cleanup:
+    sr_xpath_recover(&state);
+    return key;
+}
+
 /* check if two strings are equal */
 bool string_eq(char *first, char *second)
 {
