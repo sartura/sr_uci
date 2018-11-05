@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 MAINTAINER mislav.novakovic@sartura.hr
 
@@ -119,15 +119,6 @@ RUN \
       make -j2 && \
       make install
 
-# install lua5.1 sysrepo language bindings
-RUN apt-get install -y lua5.1-dev
-RUN \
-      cd /opt/dev/sysrepo/build && \
-      make clean && \
-      cmake -DCMAKE_INSTALL_PREFIX=/usr -DGEN_LUA_VERSION=5.1 .. && \
-      make -j2 && \
-      make install
-
 # debug tools
 RUN \
       apt-get update && apt-get install -y \
@@ -137,8 +128,7 @@ RUN \
 # dependent libraries
 RUN \
        apt-get update && apt-get install -y \
-       libjson0 \
-       libjson0-dev \
+       libjson-c-dev \
        lua5.1-dev \
        lua5.1 \
        libcurl4-openssl-dev
@@ -187,7 +177,7 @@ RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/sr_uci.git && \
       cd sr_uci && mkdir build && cd build && \
-      git checkout devel && \
+      git checkout master && \
       cmake .. && \
       make -j2 && \
       make install
@@ -197,7 +187,7 @@ RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/dhcp.git && \
       cd dhcp && mkdir build && cd build && \
-      git checkout devel && \
+      git checkout master && \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
@@ -221,8 +211,8 @@ RUN echo '#!/bin/sh' > /etc/init.d/odhcpd && chmod +x /etc/init.d/odhcpd
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/provisioning-plugin.git && \
-      cd provisioning-plugin && git checkout devel && mkdir build && cd build && \
-      git checkout devel && \
+      cd provisioning-plugin && mkdir build && cd build && \
+      git checkout master && \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
@@ -240,7 +230,7 @@ RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/network-plugin.git && \
       cd network-plugin && mkdir build && cd build && \
-      git checkout devel && \
+      git checkout master && \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
@@ -273,7 +263,7 @@ RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/firmware-plugin.git && \
       cd firmware-plugin && mkdir build && cd build && \
-      git checkout devel && \
+      git checkout master && \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
@@ -319,7 +309,7 @@ RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/wireless-plugin.git && \
       cd wireless-plugin && mkdir build && cd build && \
-      git checkout devel && \
+      git checkout master && \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
