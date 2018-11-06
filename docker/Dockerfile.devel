@@ -232,6 +232,10 @@ RUN chmod +x /usr/libexec/rpcd/system
 
 
 # network plugin
+# remove default configuration from sysrepo
+RUN \
+      rm /etc/sysrepo/data/ietf-interfaces.startup && \
+      touch /etc/sysrepo/data/ietf-interfaces.startup
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/network-plugin.git && \
