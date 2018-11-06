@@ -248,6 +248,9 @@ RUN chmod +x /etc/init.d/network
 COPY ubus/network.device /usr/libexec/rpcd/network.device
 RUN chmod +x /usr/libexec/rpcd/network.device
 
+COPY ubus/network.interface /usr/libexec/rpcd/network.interface
+RUN chmod +x /usr/libexec/rpcd/network.interface
+
 COPY ubus/router.net /usr/libexec/rpcd/router.net
 RUN chmod +x /usr/libexec/rpcd/router.net
 

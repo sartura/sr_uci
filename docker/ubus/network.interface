@@ -1,0 +1,219 @@
+#!/bin/sh
+
+case "$1" in
+    list)
+        echo '{ "dump": {} }'
+    ;;
+    call)
+        case "$2" in
+            dump)
+          echo '
+{
+	"interface": [
+		{
+			"interface": "lan",
+			"up": true,
+			"pending": false,
+			"available": true,
+			"autostart": true,
+			"dynamic": false,
+			"uptime": 109,
+			"l3_device": "br-lan",
+			"proto": "static",
+			"device": "br-lan",
+			"updated": [
+				"addresses"
+			],
+			"metric": 0,
+			"dns_metric": 0,
+			"delegation": true,
+			"ipv4-address": [
+				{
+					"address": "192.168.1.1",
+					"mask": 24
+				}
+			],
+			"ipv6-address": [
+				
+			],
+			"ipv6-prefix": [
+				
+			],
+			"ipv6-prefix-assignment": [
+				
+			],
+			"route": [
+				
+			],
+			"dns-server": [
+				
+			],
+			"dns-search": [
+				
+			],
+			"inactive": {
+				"ipv4-address": [
+					
+				],
+				"ipv6-address": [
+					
+				],
+				"route": [
+					
+				],
+				"dns-server": [
+					
+				],
+				"dns-search": [
+					
+				]
+			},
+			"data": {
+				
+			}
+		},
+		{
+			"interface": "lan_iptv",
+			"up": true,
+			"pending": false,
+			"available": true,
+			"autostart": true,
+			"dynamic": false,
+			"uptime": 108,
+			"l3_device": "br-lan_iptv",
+			"proto": "static",
+			"device": "br-lan_iptv",
+			"updated": [
+				"addresses"
+			],
+			"metric": 0,
+			"dns_metric": 0,
+			"delegation": true,
+			"ipv4-address": [
+				{
+					"address": "192.168.2.1",
+					"mask": 24
+				}
+			],
+			"ipv6-address": [
+				
+			],
+			"ipv6-prefix": [
+				
+			],
+			"ipv6-prefix-assignment": [
+				
+			],
+			"route": [
+				
+			],
+			"dns-server": [
+				
+			],
+			"dns-search": [
+				
+			],
+			"inactive": {
+				"ipv4-address": [
+					
+				],
+				"ipv6-address": [
+					
+				],
+				"route": [
+					
+				],
+				"dns-server": [
+					
+				],
+				"dns-search": [
+					
+				]
+			},
+			"data": {
+				
+			}
+		},
+		{
+			"interface": "loopback",
+			"up": true,
+			"pending": false,
+			"available": true,
+			"autostart": true,
+			"dynamic": false,
+			"uptime": 107,
+			"l3_device": "lo",
+			"proto": "static",
+			"device": "lo",
+			"updated": [
+				"addresses"
+			],
+			"metric": 0,
+			"dns_metric": 0,
+			"delegation": true,
+			"ipv4-address": [
+				{
+					"address": "127.0.0.1",
+					"mask": 8
+				}
+			],
+			"ipv6-address": [
+				
+			],
+			"ipv6-prefix": [
+				
+			],
+			"ipv6-prefix-assignment": [
+				
+			],
+			"route": [
+				
+			],
+			"dns-server": [
+				
+			],
+			"dns-search": [
+				
+			],
+			"inactive": {
+				"ipv4-address": [
+					
+				],
+				"ipv6-address": [
+					
+				],
+				"route": [
+					
+				],
+				"dns-server": [
+					
+				],
+				"dns-search": [
+					
+				]
+			},
+			"data": {
+				
+			}
+		},
+		{
+			"interface": "wan",
+			"up": false,
+			"pending": true,
+			"available": true,
+			"autostart": true,
+			"dynamic": false,
+			"proto": "dhcpv6",
+			"device": "eth0.1",
+			"data": {
+				
+			}
+		}
+	]
+}
+'
+            ;;
+        esac
+    ;;
+esac
+
