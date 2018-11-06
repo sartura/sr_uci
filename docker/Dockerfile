@@ -238,14 +238,7 @@ RUN \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      sysrepoctl -i -g ../yang/iana-if-type@2014-05-08.yang && \
-      sysrepoctl -i -g ../yang/ietf-interfaces@2014-05-08.yang && \
-      sysrepoctl -i -g ../yang/ietf-ip@2014-06-16.yang && \
-      sysrepoctl -i -g ../yang/terastream-interfaces-opto@2017-09-27.yang && \
-      sysrepoctl -d tls-listen -m ietf-netconf-server && \
-      sysrepoctl -d call-home -m ietf-netconf-server && \
-      sysrepoctl -d tls-call-home -m ietf-netconf-server && \
-      sysrepoctl -d ssh-call-home -m ietf-netconf-server
+      sysrepoctl -i -g ../yang/terastream-interfaces-opto@2017-09-27.yang
 
 COPY uci/network /etc/config/network
 
@@ -317,11 +310,7 @@ RUN \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      sysrepoctl -i -g ../yang/terastream-wireless@2017-08-08.yang && \
-      sysrepoctl -d tls-listen -m ietf-netconf-server && \
-      sysrepoctl -d call-home -m ietf-netconf-server && \
-      sysrepoctl -d tls-call-home -m ietf-netconf-server && \
-      sysrepoctl -d ssh-call-home -m ietf-netconf-server
+      sysrepoctl -i -g ../yang/terastream-wireless@2017-08-08.yang
 
 COPY uci/wireless /etc/config/wireless
 RUN echo '#!/bin/sh' > /etc/init.d/network
