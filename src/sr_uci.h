@@ -69,7 +69,7 @@
 #define CHECK_NULL_MSG(VALUE, RET, LABEL, MSG)\
 	do {\
 		if (NULL == VALUE) {\
-			*RET = SR_ERR_NOMEM;\
+			*RET = SR_ERR_INTERNAL;\
 			ERR_MSG(MSG) SRP_LOG_ERR_MSG(MSG);\
 			goto LABEL;\
 		}\
@@ -78,7 +78,7 @@
 #define CHECK_NULL(VALUE, RET, LABEL, MSG, ...)\
 	do {\
 		if (NULL == VALUE) {\
-			*RET = SR_ERR_NOMEM;\
+			*RET = SR_ERR_INTERNAL;\
 			ERR(MSG, __VA_ARGS__) SRP_LOG_ERR(MSG, __VA_ARGS__);\
 			goto LABEL;\
 		}\
