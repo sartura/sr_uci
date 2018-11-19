@@ -2,13 +2,13 @@
 
 case "$1" in
 	list)
-		echo '{ "arp": {} }'
+		echo '{ "arp": {} , "ipv6_neigh": {}}'
 	;;
 	call)
 		case "$2" in
 			arp)
 				# return json object or an array
-          			echo                 '{
+          		echo '{
                 "table": [
                          {
                           "ipaddr": "192.168.0.1",
@@ -28,6 +28,19 @@ case "$1" in
                          }
                          ]
 
+                }'
+			;;
+		    ipv6_neigh)
+          		echo '{
+                	"neighbors": [
+                		{
+                			"ip6addr": "fe80::222:7ff:fea9:d060",
+                			"device": "eth0.1",
+                			"macaddr": "00:22:07:a9:d0:60",
+                			"router": true,
+                			"ip6status": "STALE"
+                		}
+                	]
                 }'
 			;;
 		esac

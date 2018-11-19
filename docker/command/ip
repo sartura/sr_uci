@@ -1,0 +1,5 @@
+#!/bin/sh
+echo 'fe80::ddf8:abb:faf:c58f dev br-lan lladdr 18:a6:f7:1d:db:fa router REACHABLE
+2003:1c09:24:4d00::f6a dev br-lan lladdr 18:a6:f7:1d:db:fa router REACHABLE
+fe80::8678:acff:fe4b:15cc dev eth0.1 lladdr 84:78:ac:4b:15:cc router REACHABLE
+fe80::222:7ff:fea9:d060 dev eth0.1 lladdr 00:22:07:a9:d0:60 router STALE'

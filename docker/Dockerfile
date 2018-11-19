@@ -254,6 +254,12 @@ RUN chmod +x /usr/libexec/rpcd/network.interface
 COPY ubus/router.net /usr/libexec/rpcd/router.net
 RUN chmod +x /usr/libexec/rpcd/router.net
 
+# OpenWrt replacement for router.net
+COPY command/ip /bin/ip
+RUN chmod +x /bin/ip
+# in plugin replace '/proc/net/arp' with '/tmp/arp' for testing
+COPY file/arp /tmp/arp
+
 COPY ubus/sfp.ddm /usr/libexec/rpcd/sfp.ddm
 RUN chmod +x /usr/libexec/rpcd/sfp.ddm
 
