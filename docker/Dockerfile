@@ -28,7 +28,10 @@ RUN \
 # add netconf user
 RUN \
       adduser --system netconf && \
-      echo "netconf:netconf" | chpasswd && \
+      echo "netconf:netconf" | chpasswd
+
+# set root password
+RUN \
       echo "root:root" | chpasswd
 
 # generate ssh keys for netconf user
@@ -238,7 +241,8 @@ RUN \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      sysrepoctl -i -g ../yang/terastream-interfaces-opto@2017-09-27.yang
+      sysrepoctl -i -g ../yang/terastream-interfaces-opto@2017-09-27.yang && \
+      sysrepoctl -e ipv4-non-contiguous-netmasks -m ietf-ip
 
 COPY uci/network /etc/config/network
 
