@@ -41,12 +41,12 @@ case "$1" in
 			],
 			"ipv6-prefix-assignment": [
 				{
-					"address": "2003:1c09:24:4da0::",
+					"address": "2003:1122:33:4da0::",
 					"mask": 61,
 					"preferred": 2909,
 					"valid": 3209,
 					"local-address": {
-						"address": "2003:1c09:24:4da0::1",
+						"address": "2003:1122:33:4da0::1",
 						"mask": 64
 					}
 				}
@@ -132,12 +132,12 @@ case "$1" in
 					}
 				},
 				{
-					"address": "2003:1c09:24:4da8::",
+					"address": "2003:1122:33:4da8::",
 					"mask": 64,
 					"preferred": 2909,
 					"valid": 3209,
 					"local-address": {
-						"address": "2003:1c09:24:4da8::1",
+						"address": "2003:1122:33:4da8::1",
 						"mask": 64
 					}
 				}
@@ -253,7 +253,7 @@ case "$1" in
 			],
 			"ipv6-address": [
 				{
-					"address": "2003:1c09:24:4dff:222:7ff:fe70:e7a0",
+					"address": "2003:1122:33:4dff:222:7ff:fe70:e7a0",
 					"mask": 64,
 					"preferred": 604724,
 					"valid": 2591924
@@ -287,18 +287,18 @@ case "$1" in
 					}
 				},
 				{
-					"address": "2003:1c09:24:4da0::",
+					"address": "2003:1122:33:4da0::",
 					"mask": 60,
 					"preferred": 2909,
 					"valid": 3209,
 					"class": "5f414e59",
 					"assigned": {
 						"lan": {
-							"address": "2003:1c09:24:4da0::",
+							"address": "2003:1122:33:4da0::",
 							"mask": 61
 						},
 						"lan_iptv": {
-							"address": "2003:1c09:24:4da8::",
+							"address": "2003:1122:33:4da8::",
 							"mask": 64
 						}
 					}
@@ -309,7 +309,7 @@ case "$1" in
 			],
 			"route": [
 				{
-					"target": "2003:1c09:24:4dff::",
+					"target": "2003:1122:33:4dff::",
 					"mask": 64,
 					"nexthop": "::",
 					"metric": 256,
@@ -338,7 +338,7 @@ case "$1" in
 					"nexthop": "fe80::8678:acff:fe4b:15cc",
 					"metric": 512,
 					"valid": 1724,
-					"source": "2003:1c09:24:4da0::\/60"
+					"source": "2003:1122:33:4da0::\/60"
 				},
 				{
 					"target": "::",
@@ -346,7 +346,7 @@ case "$1" in
 					"nexthop": "fe80::8678:acff:fe4b:15cc",
 					"metric": 512,
 					"valid": 1724,
-					"source": "2003:1c09:24:4dff:222:7ff:fe70:e7a0\/64"
+					"source": "2003:1122:33:4dff:222:7ff:fe70:e7a0\/64"
 				}
 			],
 			"dns-server": [
@@ -483,7 +483,7 @@ case "$1" in
 			],
 			"ipv6-address": [
 				{
-					"address": "2003:1c09:24:4dff::509f:f030:0",
+					"address": "2003:1122:33:4dff::509f:f030:0",
 					"mask": 128
 				}
 			],
