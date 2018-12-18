@@ -74,17 +74,6 @@ RUN \
       make install && \
       ldconfig
 
-# libssh
-RUN apt-get install -y wget
-RUN \
-      wget https://git.libssh.org/projects/libssh.git/snapshot/master.tar.gz && \
-      tar -xvf master.tar.gz && mv master libssh && \
-      cd libssh && mkdir build && cd build && \
-      cmake .. && \
-      make -j2 && \
-      make install && \
-      ldconfig
-
 # libnetconf2
 RUN \
       git clone https://github.com/CESNET/libnetconf2.git && \
