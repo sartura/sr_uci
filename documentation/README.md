@@ -1,5 +1,8 @@
 # Firmware plugin
 
+## GitHub
+https://github.com/sartura/firmware-plugin
+
 ## ubus
 ```
 router.system info
@@ -9,6 +12,9 @@ juci.sysupgrade start
 ```
 
 # Network plugin
+
+## GitHub
+https://github.com/sartura/network-plugin
 
 ## ubus
 ```
@@ -30,6 +36,9 @@ uci commit
 
 # Provisioning plugin
 
+## GitHub
+https://github.com/sartura/provisioning-plugin
+
 ## ubus
 ```
 router.system fs
@@ -39,6 +48,9 @@ system board
 ```
 
 # Sip plugin
+
+## GitHub
+https://github.com/sartura/sip-plugin
 
 ## ubus
 ```
@@ -53,6 +65,9 @@ uci commit
 
 # Wireless plugin
 
+## GitHub
+https://github.com/sartura/wireless-plugin
+
 ## ubus
 ```
 router.wireless status
@@ -66,6 +81,9 @@ uci commit
 ```
 
 # Dhcp plugin
+
+## GitHub
+https://github.com/sartura/dhcp
 
 ## ubus
 ```
