@@ -1,0 +1,257 @@
+FROM dockcross/linux-armv7
+
+RUN \
+      apt-get update && apt-get install -y \
+      # general tools
+      git \
+      cmake \
+      build-essential \
+      vim \
+      pkg-config \
+      libavl-dev \
+      libev-dev \
+      libprotobuf-c-dev \
+      protobuf-c-compiler \
+      libtool
+
+COPY ./x86_sysrepo/bin/ /usr/local/bin/
+COPY ./x86_sysrepo/lib/ /usr/local/lib/
+
+# use /opt/dev as working directory
+RUN mkdir /opt/dev
+WORKDIR /opt/dev
+
+# pcre
+RUN \
+      wget https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.bz2 && \
+      tar -xvf pcre-8.42.tar.bz2 && \
+      cd pcre-8.42 && \
+      ./configure \
+      --with-compiler=${CROSS_TRIPLE} \
+      --host=${CROSS_TRIPLE} \
+      --enable-utf8 \
+      --enable-unicode-properties \
+      --enable-pcre16 \
+      --with-match-limit-recursion=16000 \
+      --disable-cpp \
+      --prefix=${CROSS_ROOT} \
+      && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# libev
+RUN \
+      git clone https://github.com/enki/libev.git && \
+      cd libev && \
+      ./configure \
+      --with-compiler=${CROSS_TRIPLE} \
+      --host=${CROSS_TRIPLE} \
+      --prefix=${CROSS_ROOT} \
+      && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# libredblack
+RUN \
+      git clone https://github.com/sysrepo/libredblack.git && \
+      cd libredblack && \
+      ./configure \
+      --with-compiler=${CROSS_TRIPLE} \
+      --host=${CROSS_TRIPLE} \
+      --prefix=${CROSS_ROOT} \
+      && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# protobuf
+RUN \
+      git clone https://github.com/protocolbuffers/protobuf.git && \
+      cd protobuf && \
+      git submodule update --init --recursive && \
+      ./autogen.sh && \
+      ./configure \
+      --with-compiler=${CROSS_TRIPLE} \
+      --host=${CROSS_TRIPLE} \
+      && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# protobuf-c
+RUN \
+      git clone https://github.com/protobuf-c/protobuf-c.git && \
+      cd protobuf-c && \
+      ./autogen.sh && \
+      ./configure \
+      --with-compiler=${CROSS_TRIPLE} \
+      --host=${CROSS_TRIPLE} \
+      --prefix=${CROSS_ROOT} \
+      && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# zlib
+RUN \
+      wget http://www.zlib.net/zlib-1.2.11.tar.gz && \
+      tar -xvf zlib-1.2.11.tar.gz && \
+      cd zlib-1.2.11 && \
+      ./configure \
+      --prefix=${CROSS_ROOT} \
+      --uname=Linux \
+      --shared \
+      && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# openssl
+RUN \
+      wget http://www.openssl.org/source/openssl-1.0.2q.tar.gz && \
+      tar -xvf openssl-1.0.2q.tar.gz && \
+      cd openssl-1.0.2q && \
+      ./Configure \
+      -fPIC \
+      linux-armv4 \
+      --prefix=${CROSS_ROOT} \
+      && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# bugfix
+RUN rm -rf /usr/local/lib/libcurl.*
+
+# libssh
+RUN \
+      git clone http://git.libssh.org/projects/libssh.git && \
+      wget https://git.libssh.org/projects/libssh.git/snapshot/libssh-0.7.6.tar.gz && \
+      tar -xvf libssh-0.7.6.tar.gz && \
+      cd libssh-0.7.6 && \
+      mkdir build && cd build && \
+      cmake \
+      -DCMAKE_INSTALL_PREFIX=${CROSS_ROOT} \
+      -DCMAKE_BUILD_TYPE:String="Release" \
+      -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=TRUE \
+	  -DHAVE_STRTOULL=1 \
+	  -DHAVE_GETADDRINFO=1 \
+	  -DHAVE_TERMIOS_H=1 \
+	  -DWITH_EXAMPLES:BOOL=OFF \
+	  -DWITH_GCRYPT:BOOL=OFF \
+	  -DWITH_GSSAPI:BOOL=OFF \
+	  -DWITH_LIBZ:BOOL=ON \
+	  -DWITH_NACL:BOOL=OFF \
+	  -DWITH_PCAP:BOOL=OFF \
+	  -DWITH_SERVER:BOOL=ON \
+	  -DWITH_SFTP:BOOL=ON \
+	  -DWITH_SSH1:BOOL=OFF \
+	  -DWITH_TESTING:BOOL=OFF \
+      .. && \
+      make -j2 && \
+      make install
+
+# bugfix
+RUN cp ${CROSS_ROOT}/lib/* ${CROSS_ROOT}/armv7-unknown-linux-gnueabi/lib/ -r
+
+# libyang
+RUN \
+      git clone https://github.com/CESNET/libyang.git && \
+      cd libyang && mkdir build && cd build && \
+      cmake \
+      -DCMAKE_INSTALL_PREFIX=${CROSS_ROOT} \
+      -DCMAKE_BUILD_TYPE:String="Release" \
+      -DENABLE_BUILD_TESTS=OFF \
+      .. && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# sysrepo
+RUN ln -sn /opt/root/etc/sysrepo /etc/sysrepo
+RUN \
+      git clone https://github.com/sysrepo/sysrepo.git && \
+      cd sysrepo && mkdir build && cd build && \
+      cmake \
+      -DCMAKE_INSTALL_PREFIX=${CROSS_ROOT} \
+      -DCMAKE_BUILD_TYPE:String="Release" \
+	  -DUSE_AVL_LIB:BOOL=FALSE \
+	  -DENABLE_TESTS:BOOL=FALSE \
+	  -DBUILD_EXAMPLES:BOOL=FALSE \
+	  -DGEN_LANGUAGE_BINDINGS:BOOL=FALSE \
+	  -DGEN_PYTHON_BINDINGS=FALSE \
+	  -DGEN_LUA_BINDINGS=FALSE \
+	  -DREPOSITORY_LOC:PATH=/opt/root/etc/sysrepo \
+	  -DENABLE_NACM:BOOL=FALSE \
+	  -DREQUEST_TIMEOUT=6 \
+	  -DLONG_REQUEST_TIMEOUT=30 \
+	  -DCOMMIT_VERIFY_TIMEOUT=20 \
+	  -DOPER_DATA_PROVIDE_TIMEOUT=4 \
+	  -DNOTIF_AGE_TIMEOUT=120 \
+	  -DNOTIF_TIME_WINDOW=20 \
+	  -DUSE_SR_MEM_MGMT=0 \
+      -DCALL_SYSREPOCTL_BIN=/usr/local/bin/sysrepoctl \
+      -DCALL_SYSREPOCFG_BIN=/usr/local/bin/sysrepocfg \
+      .. && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# libnetconf2
+RUN \
+      git clone https://github.com/CESNET/libnetconf2.git && \
+      cd libnetconf2 && mkdir build && cd build && \
+      cmake \
+      -DCMAKE_INSTALL_PREFIX=${CROSS_ROOT} \
+      -DCMAKE_BUILD_TYPE:String="Release" \
+      -DENABLE_BUILD_TESTS=OFF \
+      .. && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# keystore
+RUN \
+      cd /opt/dev && \
+      git clone https://github.com/CESNET/Netopeer2.git && \
+      cd Netopeer2 && \
+      cd keystored && mkdir build && cd build && \
+      cmake \
+      -DCMAKE_INSTALL_PREFIX=${CROSS_ROOT} \
+      -DCMAKE_BUILD_TYPE:String="Release" \
+      -DSYSREPOCTL_EXECUTABLE=/usr/local/bin/sysrepoctl \
+      -DSYSREPOCFG_EXECUTABLE=/usr/local/bin/sysrepocfg \
+      .. && \
+      make -j2 && \
+      make install && \
+      ldconfig
+
+# netopeer2
+RUN \
+      cd /opt/dev && \
+      cd Netopeer2/server && mkdir build && cd build && \
+      cmake \
+      -DCMAKE_INSTALL_PREFIX=${CROSS_ROOT} \
+      -DCMAKE_BUILD_TYPE:String="Release" \
+      -DSYSREPOCTL_EXECUTABLE=/usr/local/bin/sysrepoctl \
+      -DSYSREPOCFG_EXECUTABLE=/usr/local/bin/sysrepocfg \
+	  -DKEYSTORED_KEYS_DIR:STRING=/opt/root/etc/keystored/keys \
+	  -DENABLE_CONFIGURATION:BOOL=ON \
+      .. && \
+      make -j2 && \
+      make install && \
+      cd ../../cli && mkdir build && cd build && \
+      cmake \
+      -DCMAKE_INSTALL_PREFIX=${CROSS_ROOT} \
+      -DCMAKE_BUILD_TYPE:String="Release" \
+      .. && \
+      make -j2 && \
+      make install
+
+# pack everything in tar
+COPY ./pack_root.sh /opt/dev
+
+RUN \
+      ./pack_root.sh
