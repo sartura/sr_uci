@@ -72,15 +72,6 @@ RUN \
       make install && \
       ldconfig
 
-# libssh
-RUN \
-      git clone http://git.libssh.org/projects/libssh.git && \
-      cd libssh && git checkout -b libssh-0.7.5 && mkdir build && cd build && \
-      cmake .. && \
-      make -j2 && \
-      make install && \
-      ldconfig
-
 # libnetconf2
 RUN \
       git clone https://github.com/CESNET/libnetconf2.git && \

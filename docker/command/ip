@@ -1,5 +1,39 @@
 #!/bin/sh
+
+case "$1" in
+	-6)
+		case "$2" in
+			neigh)
 echo 'fe80::ddf8:abb:faf:c58f dev br-lan lladdr 11:22:33:44:55:66 router REACHABLE
 2003:1122:33:4d00::f6a dev br-lan lladdr 11:22:33:44:55:66 router REACHABLE
 fe80::8678:acff:fe4b:15cc dev eth0.1 lladdr 84:78:ac:4b:15:cc router REACHABLE
 fe80::222:7ff:fea9:d060 dev eth0.1 lladdr 00:22:07:a9:d0:60 router STALE'
+			;;
+			-br)
+echo '1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 
+    inet6 2003:1831:24:4d01::1/64 scope global dynamic noprefixroute 
+       valid_lft 2913sec preferred_lft 2613sec
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+7: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 2044 qlen 1000
+    inet6 fe80::222:7ff:fe70:e79f/64 scope link 
+       valid_lft forever preferred_lft forever
+14: br-lan: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 
+    inet6 2003:1c09:24:4d00::1/61 scope global dynamic noprefixroute 
+       valid_lft 2913sec preferred_lft 2613sec
+    inet6 fe80::222:7ff:fe70:e79c/64 scope link 
+       valid_lft forever preferred_lft forever
+16: eth0.1: <BROADCAST,MULTICAST,ALLMULTI,UP,LOWER_UP> mtu 2044 
+    inet6 2003:1c09:24:4dff::509f:f030:0/128 scope global 
+       valid_lft forever preferred_lft forever
+    inet6 2003:1c09:24:4dff:222:7ff:fe70:e7a0/64 scope global dynamic noprefixroute 
+       valid_lft 2147390sec preferred_lft 604706sec
+    inet6 fe80::222:7ff:fe70:e7a0/64 scope link 
+       valid_lft forever preferred_lft forever
+23: map-wan_4@eth0.1: <POINTOPOINT,NOARP,UP,LOWER_UP> mtu 1500 
+    inet6 fe80::9cf2:6dff:fe34:7b5f/64 scope link 
+       valid_lft forever preferred_lft forever' 
+			    ;;
+		esac
+	;;
+esac
