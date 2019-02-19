@@ -9,6 +9,7 @@ cp -r ${CROSS_ROOT}/lib root
 cp -r ${CROSS_ROOT}/${CROSS_TRIPLE}/sysroot/lib/* root/lib/
 cp -r ${CROSS_ROOT}/etc/ root
 cp -r /opt/root/etc/sysrepo root/etc/
+cp -r /opt/root/lib/sysrepo root/lib/
 cp -r ${CROSS_ROOT}/etc/keystored root/etc
 
 # clean
