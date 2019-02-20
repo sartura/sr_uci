@@ -10,7 +10,9 @@ cp -r ${CROSS_ROOT}/${CROSS_TRIPLE}/sysroot/lib/* root/lib/
 cp -r ${CROSS_ROOT}/etc/ root
 cp -r /opt/root/etc/sysrepo root/etc/
 cp -r /opt/root/lib/sysrepo root/lib/
-cp -r ${CROSS_ROOT}/etc/keystored root/etc
+cp -r ${CROSS_ROOT}/etc/keystored root/etc/
+cp -r /etc/ssh root/etc/
+cp -r /etc/ssl root/etc/
 
 # clean
 rm -rf root/bin/${CROSS_TRIPLE}*
