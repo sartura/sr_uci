@@ -110,9 +110,9 @@ RUN \
 
 # openssl
 RUN \
-      wget http://www.openssl.org/source/openssl-1.0.2q.tar.gz && \
-      tar -xvf openssl-1.0.2q.tar.gz && \
-      cd openssl-1.0.2q && \
+      wget http://www.openssl.org/source/openssl-1.1.1a.tar.gz && \
+      tar -xvf openssl-1.1.1a.tar.gz && \
+      cd openssl-1.1.1a && \
       ./Configure \
       -fPIC \
       linux-armv4 \
@@ -125,13 +125,19 @@ RUN \
 # bugfix
 RUN rm -rf /usr/local/lib/libcurl.*
 
+# update cmake to 3.6
+RUN \
+      printf "deb http://httpredir.debian.org/debian jessie-backports main non-free\ndeb-src http://httpredir.debian.org/debian jessie-backports main non-free" > /etc/apt/sources.list.d/backports.list && \
+      apt-get update && apt-get -t jessie-backports install -y --no-install-recommends cmake && \
+      apt-get clean && \
+      rm -rf /var/lib/apt/lists/*
+
 # libssh
 RUN \
       git clone http://git.libssh.org/projects/libssh.git && \
-      wget https://git.libssh.org/projects/libssh.git/snapshot/libssh-0.7.6.tar.gz && \
-      tar -xvf libssh-0.7.6.tar.gz && \
-      cd libssh-0.7.6 && \
+      cd libssh && \
       mkdir build && cd build && \
+      git checkout libssh-0.7.7 && \
       cmake \
       -DCMAKE_INSTALL_PREFIX=${CROSS_ROOT} \
       -DCMAKE_BUILD_TYPE:String="Release" \
@@ -147,8 +153,6 @@ RUN \
 	  -DWITH_PCAP:BOOL=OFF \
 	  -DWITH_SERVER:BOOL=ON \
 	  -DWITH_SFTP:BOOL=ON \
-	  -DWITH_SSH1:BOOL=OFF \
-	  -DWITH_TESTING:BOOL=OFF \
       .. && \
       make -j2 && \
       make install
