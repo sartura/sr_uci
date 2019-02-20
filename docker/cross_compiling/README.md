@@ -20,3 +20,7 @@ Export the new path and run sysrepo.
 $ export PATH="/opt/root/bin:$PATH"
 $ sysrepoct -l
 ```
+
+# rebuild
+
+To rebuild just remove the `cross_sysrepo` folder.
