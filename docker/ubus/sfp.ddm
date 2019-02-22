@@ -2,7 +2,7 @@
 
 case "$1" in
 	list)
-		  echo '{ "get-tx-pwr": {},"get-rx-pwr": {}, "get-voltage": {} , "get-current": {} }'
+		  echo '{ "get-tx-pwr": {},"get-rx-pwr": {}, "get-voltage": {} , "get-current": {} , "get-all": {} }'
 	;;
 	call)
 		case "$2" in
@@ -21,6 +21,17 @@ case "$1" in
           ;;
       get-tx-pwr)
           echo '{"tx-pwr": "0.2358 mW"}'
+          ;;
+      get-all)
+          echo '{
+	"voltage": "3.2210 V",
+	"current": "24.064 mA",
+	"tx-pwr": "0.2352 mW",
+	"tx-pwr-dBm": "-6.2856 dBm",
+	"rx-pwr": "0.0000 mW",
+	"rx-pwr-dBm": "-inf dBm",
+	"rx-pwr-type": "average"
+}'
           ;;
 		esac
 	;;
