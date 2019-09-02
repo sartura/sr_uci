@@ -23,7 +23,8 @@ RUN \
       libssl-dev \
       # bindings
       swig \
-      python-dev
+      python3 \
+      python3-dev
 
 # add netconf user
 RUN \
@@ -104,12 +105,12 @@ RUN \
       make -j2 && \
       make install
 
-# install python2 sysrepo language bindings
+# install python3 sysrepo language bindings
 RUN apt-get install -y python-dev
 RUN \
       cd /opt/dev/sysrepo/build && \
       make clean && \
-      cmake -DCMAKE_INSTALL_PREFIX=/usr -DGEN_PYTHON_VERSION=2 .. && \
+      cmake -DCMAKE_INSTALL_PREFIX=/usr -DGEN_PYTHON_VERSION=3 .. && \
       make -j2 && \
       make install
 
