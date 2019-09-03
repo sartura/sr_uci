@@ -704,7 +704,8 @@ static int parse_uci_config(sr_ctx_t *ctx, char *key) {
     rc = ctx->map[i].uci_cb(ctx, xpath, ucipath, SR_EDIT_DEFAULT, NULL);
     /* if not found skip check */
     if (SR_ERR_NOT_FOUND != rc) {
-      CHECK_RET(rc, cleanup, "failed sr_set_item_str: %s", sr_strerror(rc));
+      CHECK_RET(rc, cleanup, "uci_cb failed for xpath: %s, ucipath: %s", xpath,
+                ucipath);
     } else {
       rc = SR_ERR_OK;
     }

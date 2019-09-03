@@ -42,6 +42,9 @@ RUN \
       ssh-keygen -t dsa -P '' -f /home/netconf/.ssh/id_dsa && \
       cat /home/netconf/.ssh/id_dsa.pub > /home/netconf/.ssh/authorized_keys
 
+# create directory for plugins
+RUN mkdir -p /usr/local/lib/sysrepo/plugins
+
 # use /opt/dev as working directory
 RUN mkdir /opt/dev
 WORKDIR /opt/dev
@@ -153,6 +156,39 @@ RUN \
       mkdir /usr/lib/rpcd && \
       cp file.so /usr/lib/rpcd
 
+# sr_uci
+RUN \
+      cd /opt/dev && \
+      git clone https://github.com/sartura/sr_uci.git && \
+      cd sr_uci && mkdir build && cd build && \
+      git checkout sysrepo-1.x.x && \
+      cmake .. && \
+      make -j2 && \
+      make install
+
+# dhcp plugin
+RUN \
+      cd /opt/dev && \
+      git clone https://github.com/sartura/dhcp.git && \
+      cd dhcp && mkdir build && cd build && \
+      git checkout sysrepo-1.x.x && \
+      cmake -DPLUGIN=ON .. && \
+      make -j2 && \
+      cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
+      sysrepoctl -i ../yang/terastream-dhcp@2017-12-07.yang
+
+COPY uci/dhcp /etc/config/dhcp
+
+COPY uci/network /etc/config/network
+
+COPY ubus/ubus.dhcp /usr/libexec/rpcd/dhcp
+RUN chmod +x /usr/libexec/rpcd/dhcp
+
+COPY ubus/ubus.router.network /usr/libexec/rpcd/router.network
+RUN chmod +x /usr/libexec/rpcd/router.network
+
+RUN echo '#!/bin/sh' > /etc/init.d/network && chmod +x /etc/init.d/network
+RUN echo '#!/bin/sh' > /etc/init.d/odhcpd && chmod +x /etc/init.d/odhcpd
 
 ENV EDITOR vim
 EXPOSE 830
