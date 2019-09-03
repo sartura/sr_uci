@@ -794,7 +794,7 @@ int sr_uci_init_data(sr_ctx_t *ctx, const char *uci_config,
 
   /* commit the changes to startup datastore */
   rc = sr_apply_changes(ctx->startup_sess);
-  CHECK_RET(rc, cleanup, "failed sr_commit: %s", sr_strerror(rc));
+  CHECK_RET(rc, cleanup, "failed sr_apply_changes: %s", sr_strerror(rc));
 
   return rc;
 
