@@ -825,7 +825,8 @@ int sync_datastores(sr_ctx_t *ctx) {
 
   if (stat(startup_file, &st) != 0) {
     ERR("Could not open sysrepo file %s", startup_file);
-    return SR_ERR_INTERNAL;
+    rc = SR_ERR_INTERNAL;
+    goto cleanup;
   }
 
   if (0 == st.st_size) {
