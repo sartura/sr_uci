@@ -73,7 +73,7 @@ RUN \
       git clone https://github.com/sysrepo/sysrepo.git && \
       cd sysrepo && mkdir build && cd build && \
       git checkout devel && \
-      cmake -DCMAKE_BUILD_TYPE:String="Debug" -DENABLE_TESTS=OFF -DREPOSITORY_LOC:PATH=/etc/sysrepo -DUSE_AVL_LIB:BOOL=FALSE  .. && \
+      cmake -DCMAKE_BUILD_TYPE:String="Debug" -DENABLE_TESTS=OFF -DREPOSITORY_LOC:PATH=/etc/sysrepo -DUSE_AVL_LIB:BOOL=FALSE -DREPO_PATH="/etc/sysrepo" .. && \
       make -j2 && \
       make install && \
       ldconfig
@@ -150,6 +150,7 @@ RUN \
       cd /opt/dev && \
       git clone https://git.openwrt.org/project/rpcd.git && \
       cd rpcd && \
+      git checkout 345363bf473fc6d2e35667758c3588d7f379b86f && \
       cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" -DIWINFO_SUPPORT=NO . && \
       make -j2 && \
       make install && \
