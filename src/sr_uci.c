@@ -570,6 +570,9 @@ static int sr_dup_val_data(sr_val_t *dest, const sr_val_t *source) {
   case SR_UINT16_T:
   case SR_UINT32_T:
   case SR_UINT64_T:
+    dest->data = source->data;
+    dest->type = source->type;
+    break;
   default:
     dest->type = source->type;
     break;
