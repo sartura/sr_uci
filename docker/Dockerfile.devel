@@ -176,7 +176,10 @@ RUN \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      sysrepoctl -i ../yang/terastream-dhcp@2017-12-07.yang
+      sysrepoctl -i ../yang/terastream-dhcp@2017-12-07.yang && \
+      rm /etc/sysrepo/data/terastream-dhcp.startup && \
+      touch /etc/sysrepo/data/terastream-dhcp.startup
+
 
 COPY uci/dhcp /etc/config/dhcp
 
@@ -190,6 +193,49 @@ RUN chmod +x /usr/libexec/rpcd/router.network
 
 RUN echo '#!/bin/sh' > /etc/init.d/network && chmod +x /etc/init.d/network
 RUN echo '#!/bin/sh' > /etc/init.d/odhcpd && chmod +x /etc/init.d/odhcpd
+
+# network plugin
+# remove default configuration from sysrepo
+RUN \
+      cd /opt/dev && \
+      git clone https://github.com/sartura/network-plugin.git && \
+      cd network-plugin && mkdir build && cd build && \
+      git checkout sysrepo-1.x.x && \
+      cmake -DPLUGIN=ON .. && \
+      make -j2 && \
+      cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
+      sysrepoctl -i ../yang/ietf-interfaces@2014-05-08.yang && \
+      sysrepoctl -i ../yang/iana-if-type@2014-05-08.yang && \
+      sysrepoctl -i ../yang/ietf-ip@2014-06-16.yang && \
+      sysrepoctl -i ../yang/terastream-interfaces-opto@2017-09-27.yang && \
+      sysrepoctl -c ietf-ip -e ipv4-non-contiguous-netmasks && \
+      rm /etc/sysrepo/data/ietf-interfaces.startup && \
+      touch /etc/sysrepo/data/ietf-interfaces.startup && \
+      rm /etc/sysrepo/data/terastream-interfaces-opto.startup && \
+      touch /etc/sysrepo/data/terastream-interfaces-opto.startup
+
+COPY uci/network /etc/config/network
+
+RUN echo '#!/bin/sh' > /etc/init.d/network
+RUN chmod +x /etc/init.d/network
+
+COPY ubus/network.device /usr/libexec/rpcd/network.device
+RUN chmod +x /usr/libexec/rpcd/network.device
+
+COPY ubus/network.interface /usr/libexec/rpcd/network.interface
+RUN chmod +x /usr/libexec/rpcd/network.interface
+
+COPY ubus/router.net /usr/libexec/rpcd/router.net
+RUN chmod +x /usr/libexec/rpcd/router.net
+
+# OpenWrt replacement for router.net
+COPY command/ip /bin/ip
+RUN chmod +x /bin/ip
+# in plugin replace '/proc/net/arp' with '/tmp/arp' for testing
+COPY file/arp /tmp/arp
+
+COPY ubus/sfp.ddm /usr/libexec/rpcd/sfp.ddm
+RUN chmod +x /usr/libexec/rpcd/sfp.ddm
 
 ENV EDITOR vim
 EXPOSE 830
