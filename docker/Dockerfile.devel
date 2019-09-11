@@ -237,6 +237,36 @@ COPY file/arp /tmp/arp
 COPY ubus/sfp.ddm /usr/libexec/rpcd/sfp.ddm
 RUN chmod +x /usr/libexec/rpcd/sfp.ddm
 
+# firmware plugin
+RUN \
+      cd /opt/dev && \
+      git clone https://github.com/sartura/firmware-plugin.git && \
+      cd firmware-plugin && mkdir build && cd build && \
+      git checkout sysrepo-1.x.x && \
+      cmake -DPLUGIN=ON .. && \
+      make -j2 && \
+      cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
+	  sysrepoctl -i ../yang/iana-crypt-hash@2014-08-06.yang && \
+	  sysrepoctl -i ../yang/ietf-netconf-acm@2018-02-14.yang && \
+	  sysrepoctl -i ../yang/ietf-system@2014-08-06.yang && \
+	  sysrepoctl -c ietf-system -e authentication && \
+	  sysrepoctl -c ietf-system -e local-users && \
+      sysrepoctl -i ../yang/terastream-software@2017-11-01.yang && \
+      sysrepoctl -c terastream-software -e software-credentials-password
+
+# ubus call juci.system
+COPY ubus/juci.system /usr/libexec/rpcd/juci.system
+RUN chmod +x /usr/libexec/rpcd/juci.system
+
+# ubus call juci.sysupgrade
+COPY ubus/juci.sysupgrade /usr/libexec/rpcd/juci.sysupgrade
+RUN chmod +x /usr/libexec/rpcd/juci.sysupgrade
+
+# ubus call router.system
+COPY ubus/router.system /usr/libexec/rpcd/router.system
+run chmod +x /usr/libexec/rpcd/router.system
+
+
 ENV EDITOR vim
 EXPOSE 830
 
