@@ -266,6 +266,44 @@ RUN chmod +x /usr/libexec/rpcd/juci.sysupgrade
 COPY ubus/router.system /usr/libexec/rpcd/router.system
 run chmod +x /usr/libexec/rpcd/router.system
 
+# sip plugin
+RUN \
+      cd /opt/dev && \
+      git clone https://github.com/sartura/sip-plugin.git && \
+      cd sip-plugin && mkdir build && cd build && \
+      git checkout sysrepo-1.x.x && \
+	  cmake -DPLUGIN=ON .. && \
+      make -j2 && \
+      cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
+      sysrepoctl -i ../yang/terastream-sip@2017-08-09.yang
+
+COPY uci/voice_client /etc/config/voice_client
+
+COPY ubus/asterisk.sip /usr/libexec/rpcd/asterisk.sip
+
+RUN chmod +x /usr/libexec/rpcd/asterisk.sip
+
+RUN echo '#!/bin/sh' > /etc/init.d/voice_client && chmod +x /etc/init.d/voice_client
+
+RUN echo '#!/bin/sh' > /etc/init.d/asterisk && chmod +x /etc/init.d/asterisk
+
+# provisioning plugin
+RUN \
+      cd /opt/dev && \
+      git clone https://github.com/sartura/provisioning-plugin.git && \
+      cd provisioning-plugin && mkdir build && cd build && \
+      git checkout sysrepo-1.x.x && \
+      cmake -DPLUGIN=ON .. && \
+      make -j2 && \
+      cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
+      sysrepoctl -i ../yang/terastream-provisioning@2018-05-14.yang
+
+COPY ubus/router.system /usr/libexec/rpcd/router.system
+RUN chmod +x /usr/libexec/rpcd/router.system
+
+COPY ubus/system /usr/libexec/rpcd/system
+RUN chmod +x /usr/libexec/rpcd/system
+
 
 ENV EDITOR vim
 EXPOSE 830
