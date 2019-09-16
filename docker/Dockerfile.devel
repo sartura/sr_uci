@@ -89,19 +89,19 @@ RUN \
       ldconfig
 
 # Netopeer2
-RUN \
-      cd /opt/dev && \
-      git clone https://github.com/CESNET/Netopeer2.git && \
-      cd Netopeer2/server && \
-      git checkout devel-server && \
-      mkdir build && cd build && \
-      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
-      make -j2 && \
-      make install && \
-      cd ../../cli && mkdir build && cd build && \
-      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
-      make -j2 && \
-      make install
+#RUN \
+#      cd /opt/dev && \
+#      git clone https://github.com/CESNET/Netopeer2.git && \
+#      cd Netopeer2/server && \
+#      git checkout devel-server && \
+#      mkdir build && cd build && \
+#      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
+#      make -j2 && \
+#      make install && \
+#      cd ../../cli && mkdir build && cd build && \
+#      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
+#      make -j2 && \
+#      make install
 
 # debug tools
 RUN \
@@ -150,7 +150,7 @@ RUN \
       cd /opt/dev && \
       git clone https://git.openwrt.org/project/rpcd.git && \
       cd rpcd && \
-      git checkout 345363bf473fc6d2e35667758c3588d7f379b86f && \
+      git checkout master && \
       cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Debug" -DIWINFO_SUPPORT=NO . && \
       make -j2 && \
       make install && \
@@ -303,6 +303,27 @@ RUN chmod +x /usr/libexec/rpcd/router.system
 
 COPY ubus/system /usr/libexec/rpcd/system
 RUN chmod +x /usr/libexec/rpcd/system
+
+# wireless plugin
+RUN \
+      cd /opt/dev && \
+      git clone https://github.com/sartura/wireless-plugin.git && \
+      cd wireless-plugin && mkdir build && cd build && \
+      git checkout sysrepo-1.x.x && \
+      cmake -DPLUGIN=ON .. && \
+      make -j2 && \
+      cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
+      sysrepoctl -i ../yang/terastream-wireless@2017-08-08.yang
+
+COPY uci/wireless /etc/config/wireless
+RUN echo '#!/bin/sh' > /etc/init.d/network
+RUN chmod +x /etc/init.d/network
+
+COPY ubus/router.wireless /usr/libexec/rpcd/router.wireless
+RUN chmod +x /usr/libexec/rpcd/router.wireless
+
+COPY ubus/network.device /usr/libexec/rpcd/network.device
+RUN chmod +x /usr/libexec/rpcd/network.device
 
 
 ENV EDITOR vim
