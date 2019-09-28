@@ -176,9 +176,7 @@ RUN \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      sysrepoctl -i ../yang/terastream-dhcp@2017-12-07.yang && \
-      rm /etc/sysrepo/data/terastream-dhcp.startup && \
-      touch /etc/sysrepo/data/terastream-dhcp.startup
+      sysrepoctl -i ../yang/terastream-dhcp@2017-12-07.yang 
 
 
 COPY uci/dhcp /etc/config/dhcp
@@ -208,11 +206,7 @@ RUN \
       sysrepoctl -i ../yang/iana-if-type@2014-05-08.yang && \
       sysrepoctl -i ../yang/ietf-ip@2014-06-16.yang && \
       sysrepoctl -i ../yang/terastream-interfaces-opto@2017-09-27.yang && \
-      sysrepoctl -c ietf-ip -e ipv4-non-contiguous-netmasks && \
-      rm /etc/sysrepo/data/ietf-interfaces.startup && \
-      touch /etc/sysrepo/data/ietf-interfaces.startup && \
-      rm /etc/sysrepo/data/terastream-interfaces-opto.startup && \
-      touch /etc/sysrepo/data/terastream-interfaces-opto.startup
+      sysrepoctl -c ietf-ip -e ipv4-non-contiguous-netmasks 
 
 COPY uci/network /etc/config/network
 
@@ -252,7 +246,7 @@ RUN \
 	  sysrepoctl -c ietf-system -e authentication && \
 	  sysrepoctl -c ietf-system -e local-users && \
       sysrepoctl -i ../yang/terastream-software@2017-11-01.yang && \
-      sysrepoctl -c terastream-software -e software-credentials-password
+	  sysrepoctl -c terastream-software -e software-credentials-password
 
 # ubus call juci.system
 COPY ubus/juci.system /usr/libexec/rpcd/juci.system

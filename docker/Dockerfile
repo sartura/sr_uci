@@ -22,7 +22,7 @@ RUN \
       libssh-dev \
       libssl-dev \
       # bindings
-      swig \
+#      swig \
       python3 \
       python3-dev
 
@@ -106,13 +106,12 @@ RUN \
       make install
 
 # install python3 sysrepo language bindings
-RUN apt-get install -y python-dev
-RUN \
-      cd /opt/dev/sysrepo/build && \
-      make clean && \
-      cmake -DCMAKE_INSTALL_PREFIX=/usr -DGEN_PYTHON_VERSION=3 .. && \
-      make -j2 && \
-      make install
+#RUN \
+#      cd /opt/dev/sysrepo/build && \
+#      make clean && \
+#      cmake -DCMAKE_INSTALL_PREFIX=/usr -DGEN_PYTHON_VERSION=3 .. && \
+#      make -j2 && \
+#      make install
 
 # debug tools
 RUN \
