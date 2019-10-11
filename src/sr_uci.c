@@ -814,41 +814,39 @@ cleanup:
  * if sysrepo already has some data, skip this step
  */
 int sync_datastores(sr_ctx_t *ctx) {
-  char *startup_file = NULL;
+  char *datatstore_command = NULL;
   int rc = SR_ERR_OK;
-  struct stat st;
+  FILE *fp;
 
   /* check if the startup datastore is empty
-   * by checking the content of the file */
-  int len = strlen(ctx->yang_model) + 28;
-  startup_file = malloc(sizeof(char) * len);
-  CHECK_NULL_MSG(startup_file, &rc, cleanup, "malloc failed");
+   * by checking the output of sysrepocfg */
 
-  snprintf(startup_file, len, "/etc/sysrepo/data/%s.startup", ctx->yang_model);
+  int len = strlen(ctx->yang_model) + 30;
+  datatstore_command = malloc(sizeof(char) * len);
+  CHECK_NULL_MSG(datatstore_command, &rc, cleanup, "malloc failed");
 
-  if (stat(startup_file, &st) != 0) {
-    ERR("Could not open sysrepo file %s", startup_file);
-    rc = SR_ERR_INTERNAL;
-    goto cleanup;
-  }
+  snprintf(datatstore_command, len, "sysrepocfg -X -d startup -m %s", ctx->yang_model);
 
-  if (0 == st.st_size) {
-    /* parse uci config */
-    rc = sr_uci_init_data(ctx, ctx->config_file, ctx->uci_sections);
-    INF_MSG("copy uci data to sysrepo");
-    CHECK_RET(rc, cleanup, "failed to apply uci data to sysrepo: %s",
-              sr_strerror(rc));
-  } else {
+  fp = popen(datatstore_command, "r");
+  CHECK_NULL_MSG(fp, &rc, cleanup, "popen failed");
+  if (fgetc(fp) != EOF) {
     /* copy the sysrepo startup datastore to uci */
     INF_MSG("copy sysrepo data to uci");
     CHECK_RET(rc, cleanup, "failed to apply sysrepo startup data: %s",
               sr_strerror(rc));
+
+  } else { /* parse uci config */
+    rc = sr_uci_init_data(ctx, ctx->config_file, ctx->uci_sections);
+    INF_MSG("copy uci data to sysrepo");
+    CHECK_RET(rc, cleanup, "failed to apply uci data to sysrepo: %s",
+              sr_strerror(rc));
   }
 
 cleanup:
-  if (NULL != startup_file) {
-    free(startup_file);
+  if (NULL != datatstore_command) {
+    free(datatstore_command);
   }
+  fclose(fp);
   return rc;
 }
 
