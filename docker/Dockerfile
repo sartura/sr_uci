@@ -55,15 +55,6 @@ RUN \
       make install && \
       ldconfig
 
-# libredblack
-RUN \
-      git clone https://github.com/sysrepo/libredblack.git && \
-      cd libredblack && \
-      ./configure --prefix=/usr && \
-      make && \
-      make install && \
-      ldconfig
-
 # sysrepo
 RUN \
       git clone https://github.com/sysrepo/sysrepo.git && \
@@ -82,20 +73,10 @@ RUN \
       make install && \
       ldconfig
 
-# keystore
-RUN \
-      cd /opt/dev && \
-      git clone https://github.com/CESNET/Netopeer2.git && \
-      cd Netopeer2 && \
-      cd keystored && mkdir build && cd build && \
-      cmake -DCMAKE_BUILD_TYPE:String="Release" .. && \
-      make -j2 && \
-      make install && \
-      ldconfig
-
 # netopeer2
 RUN \
       cd /opt/dev && \
+      git clone https://github.com/CESNET/Netopeer2.git && \
       cd Netopeer2/server && mkdir build && cd build && \
       cmake -DCMAKE_BUILD_TYPE:String="Release" .. && \
       make -j2 && \
@@ -105,13 +86,6 @@ RUN \
       make -j2 && \
       make install
 
-# install python3 sysrepo language bindings
-#RUN \
-#      cd /opt/dev/sysrepo/build && \
-#      make clean && \
-#      cmake -DCMAKE_INSTALL_PREFIX=/usr -DGEN_PYTHON_VERSION=3 .. && \
-#      make -j2 && \
-#      make install
 
 # debug tools
 RUN \
@@ -119,15 +93,7 @@ RUN \
       valgrind \
       gdb
 
-# dependent libraries
-RUN \
-       apt-get update && apt-get install -y \
-       libjson-c-dev \
-       lua5.1-dev \
-       lua5.1 \
-       libcurl4-openssl-dev
-
-# ubox
+## ubox
 RUN \
       cd /opt/dev && \
       git clone  git://git.openwrt.org/project/libubox.git && \
@@ -137,7 +103,7 @@ RUN \
       make -j2 && \
       make install
 
-# uci
+## uci
 RUN \
       cd /opt/dev && \
       git clone git://nbd.name/uci.git && \
@@ -146,7 +112,7 @@ RUN \
       make -j2 && \
       make install
 
-# ubus
+## ubus
 RUN \
       cd /opt/dev && \
       git clone https://git.openwrt.org/project/ubus.git && \
@@ -155,7 +121,7 @@ RUN \
       make -j2 && \
       make install
 
-# rpcd
+## rpcd
 RUN \
       cd /opt/dev && \
       git clone https://git.openwrt.org/project/rpcd.git && \
@@ -166,26 +132,28 @@ RUN \
       mkdir /usr/lib/rpcd && \
       cp file.so /usr/lib/rpcd
 
-# sr_uci
+
+## sr_uci
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/sr_uci.git && \
       cd sr_uci && mkdir build && cd build && \
-      git checkout master && \
+      git checkout sysrepo-1.x.x && \
       cmake .. && \
       make -j2 && \
       make install
 
-# dhcp plugin
+## dhcp plugin
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/dhcp.git && \
       cd dhcp && mkdir build && cd build && \
-      git checkout master && \
+      git checkout sysrepo-1.x.x && \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      sysrepoctl -i -g ../yang/terastream-dhcp@2017-12-07.yang
+      sysrepoctl -i ../yang/terastream-dhcp@2017-12-07.yang
+
 
 COPY uci/dhcp /etc/config/dhcp
 
@@ -200,40 +168,21 @@ RUN chmod +x /usr/libexec/rpcd/router.network
 RUN echo '#!/bin/sh' > /etc/init.d/network && chmod +x /etc/init.d/network
 RUN echo '#!/bin/sh' > /etc/init.d/odhcpd && chmod +x /etc/init.d/odhcpd
 
-
-# provisioning plugin
-RUN \
-      cd /opt/dev && \
-      git clone https://github.com/sartura/provisioning-plugin.git && \
-      cd provisioning-plugin && mkdir build && cd build && \
-      git checkout master && \
-      cmake -DPLUGIN=ON .. && \
-      make -j2 && \
-      cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      sysrepoctl -i -g ../yang/terastream-provisioning@2018-05-14.yang
-
-COPY ubus/router.system /usr/libexec/rpcd/router.system
-RUN chmod +x /usr/libexec/rpcd/router.system
-
-COPY ubus/system /usr/libexec/rpcd/system
-RUN chmod +x /usr/libexec/rpcd/system
-
-
-# network plugin
-# remove default configuration from sysrepo
-RUN \
-      rm /etc/sysrepo/data/ietf-interfaces.startup && \
-      touch /etc/sysrepo/data/ietf-interfaces.startup
+## network plugin
+## remove default configuration from sysrepo
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/network-plugin.git && \
       cd network-plugin && mkdir build && cd build && \
-      git checkout master && \
+      git checkout sysrepo-1.x.x && \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      sysrepoctl -i -g ../yang/terastream-interfaces-opto@2017-09-27.yang && \
-      sysrepoctl -e ipv4-non-contiguous-netmasks -m ietf-ip
+      sysrepoctl -i ../yang/ietf-interfaces@2014-05-08.yang && \
+      sysrepoctl -i ../yang/iana-if-type@2014-05-08.yang && \
+      sysrepoctl -i ../yang/ietf-ip@2014-06-16.yang && \
+      sysrepoctl -i ../yang/terastream-interfaces-opto@2017-09-27.yang && \
+      sysrepoctl -c ietf-ip -e ipv4-non-contiguous-netmasks
 
 COPY uci/network /etc/config/network
 
@@ -249,50 +198,54 @@ RUN chmod +x /usr/libexec/rpcd/network.interface
 COPY ubus/router.net /usr/libexec/rpcd/router.net
 RUN chmod +x /usr/libexec/rpcd/router.net
 
-# OpenWrt replacement for router.net
+## OpenWrt replacement for router.net
 COPY command/ip /bin/ip
 RUN chmod +x /bin/ip
-# in plugin replace '/proc/net/arp' with '/tmp/arp' for testing
+## in plugin replace '/proc/net/arp' with '/tmp/arp' for testing
 COPY file/arp /tmp/arp
 
 COPY ubus/sfp.ddm /usr/libexec/rpcd/sfp.ddm
 RUN chmod +x /usr/libexec/rpcd/sfp.ddm
 
-
-# firmware plugin
+## firmware plugin
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/firmware-plugin.git && \
       cd firmware-plugin && mkdir build && cd build && \
-      git checkout master && \
+      git checkout sysrepo-1.x.x && \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      sysrepoctl -i -g ../yang/terastream-software@2017-11-01.yang -s /etc/sysrepo/yang && \
-      sysrepoctl -e software-credentials-password -m terastream-software
+	  sysrepoctl -i ../yang/iana-crypt-hash@2014-08-06.yang && \
+	  sysrepoctl -i ../yang/ietf-netconf-acm@2018-02-14.yang && \
+	  sysrepoctl -i ../yang/ietf-system@2014-08-06.yang && \
+	  sysrepoctl -c ietf-system -e authentication && \
+	  sysrepoctl -c ietf-system -e local-users && \
+      sysrepoctl -i ../yang/terastream-software@2017-11-01.yang && \
+	  sysrepoctl -c terastream-software -e software-credentials-password
 
-# ubus call juci.system
+## ubus call juci.system
 COPY ubus/juci.system /usr/libexec/rpcd/juci.system
 RUN chmod +x /usr/libexec/rpcd/juci.system
 
-# ubus call juci.sysupgrade
+## ubus call juci.sysupgrade
 COPY ubus/juci.sysupgrade /usr/libexec/rpcd/juci.sysupgrade
 RUN chmod +x /usr/libexec/rpcd/juci.sysupgrade
 
-# ubus call router.system
+## ubus call router.system
 COPY ubus/router.system /usr/libexec/rpcd/router.system
 run chmod +x /usr/libexec/rpcd/router.system
 
-
-# sip plugin
+## sip plugin
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/sip-plugin.git && \
       cd sip-plugin && mkdir build && cd build && \
-      cmake -DPLUGIN=ON .. && \
+      git checkout sysrepo-1.x.x && \
+	  cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      sysrepoctl -i -g ../yang/terastream-sip@2017-08-09.yang
+      sysrepoctl -i ../yang/terastream-sip@2017-08-09.yang
 
 COPY uci/voice_client /etc/config/voice_client
 
@@ -304,17 +257,33 @@ RUN echo '#!/bin/sh' > /etc/init.d/voice_client && chmod +x /etc/init.d/voice_cl
 
 RUN echo '#!/bin/sh' > /etc/init.d/asterisk && chmod +x /etc/init.d/asterisk
 
+## provisioning plugin
+RUN \
+      cd /opt/dev && \
+      git clone https://github.com/sartura/provisioning-plugin.git && \
+      cd provisioning-plugin && mkdir build && cd build && \
+      git checkout sysrepo-1.x.x && \
+      cmake -DPLUGIN=ON .. && \
+      make -j2 && \
+      cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
+      sysrepoctl -i ../yang/terastream-provisioning@2018-05-14.yang
 
-# wireless plugin
+COPY ubus/router.system /usr/libexec/rpcd/router.system
+RUN chmod +x /usr/libexec/rpcd/router.system
+
+COPY ubus/system /usr/libexec/rpcd/system
+RUN chmod +x /usr/libexec/rpcd/system
+
+## wireless plugin
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/wireless-plugin.git && \
       cd wireless-plugin && mkdir build && cd build && \
-      git checkout master && \
+      git checkout sysrepo-1.x.x && \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      sysrepoctl -i -g ../yang/terastream-wireless@2017-08-08.yang
+      sysrepoctl -i ../yang/terastream-wireless@2017-08-08.yang
 
 COPY uci/wireless /etc/config/wireless
 RUN echo '#!/bin/sh' > /etc/init.d/network
@@ -326,17 +295,6 @@ RUN chmod +x /usr/libexec/rpcd/router.wireless
 COPY ubus/network.device /usr/libexec/rpcd/network.device
 RUN chmod +x /usr/libexec/rpcd/network.device
 
-# test plugin
-RUN \
-      cd /opt/dev && \
-      git clone https://github.com/sartura/test-plugin.git && \
-      cd test-plugin && mkdir build && cd build && \
-      git checkout master && \
-      cmake -DPLUGIN=ON .. && \
-      make -j2 && \
-      cp sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      ls ../yang && \
-      sysrepoctl -i -g ../yang/test-plugin@2018-02-20.yang
 
 ENV EDITOR vim
 EXPOSE 830

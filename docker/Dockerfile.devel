@@ -4,6 +4,7 @@ MAINTAINER mislav.novakovic@sartura.hr
 
 RUN \
       apt-get update && apt-get install -y \
+	  wget \
       # general tools
       git \
       cmake \
@@ -49,12 +50,28 @@ RUN mkdir -p /usr/local/lib/sysrepo/plugins
 RUN mkdir /opt/dev
 WORKDIR /opt/dev
 
+# debug tools
+RUN \
+      apt-get update && apt-get install -y \
+      valgrind \
+      gdb
+
+# cmoka
+RUN \
+      cd /opt/dev && \
+      git clone git://git.cryptomilk.org/projects/cmocka.git && cd cmocka && \
+      git checkout tags/cmocka-1.1.5 && \
+      mkdir build && cd build && \
+      cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr .. && \
+      make -j2 && \
+      make install
+
 # libyang
 RUN \
       git clone https://github.com/CESNET/libyang.git && \
       cd libyang && mkdir build && cd build && \
       git checkout devel && \
-      cmake -DCMAKE_BUILD_TYPE:String="Debug" -DENABLE_BUILD_TESTS=OFF .. && \
+      cmake -DCMAKE_BUILD_TYPE:String="Debug" -DGEN_LANGUAGE_BINDINGS=ON -DENABLE_BUILD_TESTS=OFF .. && \
       make -j2 && \
       make install && \
       ldconfig
@@ -68,7 +85,7 @@ RUN \
       make install && \
       ldconfig
 
-# sysrepo
+# sysrepo sartura fork
 RUN \
       git clone https://github.com/sysrepo/sysrepo.git && \
       cd sysrepo && mkdir build && cd build && \
@@ -89,25 +106,21 @@ RUN \
       ldconfig
 
 # Netopeer2
-#RUN \
-#      cd /opt/dev && \
-#      git clone https://github.com/CESNET/Netopeer2.git && \
-#      cd Netopeer2/server && \
-#      git checkout devel-server && \
-#      mkdir build && cd build && \
-#      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
-#      make -j2 && \
-#      make install && \
-#      cd ../../cli && mkdir build && cd build && \
-#      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
-#      make -j2 && \
-#      make install
-
-# debug tools
 RUN \
-      apt-get update && apt-get install -y \
-      valgrind \
-      gdb
+      cd /opt/dev && \
+      git clone https://github.com/CESNET/Netopeer2.git && \
+      cd Netopeer2/server && \
+      git checkout devel-server && \
+      mkdir build && cd build && \
+      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
+      make -j2 && \
+      make install && \
+      cd ../../cli && mkdir build && cd build && \
+      cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
+      make -j2 && \
+      make install
+
+
 
 # dependent libraries
 RUN \
@@ -117,7 +130,7 @@ RUN \
        lua5.1 \
        libcurl4-openssl-dev
 
-# ubox
+## ubox
 RUN \
       cd /opt/dev && \
       git clone  git://git.openwrt.org/project/libubox.git && \
@@ -127,7 +140,7 @@ RUN \
       make -j2 && \
       make install
 
-# uci
+## uci
 RUN \
       cd /opt/dev && \
       git clone git://nbd.name/uci.git && \
@@ -136,7 +149,7 @@ RUN \
       make -j2 && \
       make install
 
-# ubus
+## ubus
 RUN \
       cd /opt/dev && \
       git clone https://git.openwrt.org/project/ubus.git && \
@@ -145,7 +158,7 @@ RUN \
       make -j2 && \
       make install
 
-# rpcd
+## rpcd
 RUN \
       cd /opt/dev && \
       git clone https://git.openwrt.org/project/rpcd.git && \
@@ -157,7 +170,7 @@ RUN \
       mkdir /usr/lib/rpcd && \
       cp file.so /usr/lib/rpcd
 
-# sr_uci
+## sr_uci
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/sr_uci.git && \
@@ -167,7 +180,7 @@ RUN \
       make -j2 && \
       make install
 
-# dhcp plugin
+## dhcp plugin
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/dhcp.git && \
@@ -176,7 +189,7 @@ RUN \
       cmake -DPLUGIN=ON .. && \
       make -j2 && \
       cp lib/sysrepo-plugin-dt-* /usr/local/lib/sysrepo/plugins/ && \
-      sysrepoctl -i ../yang/terastream-dhcp@2017-12-07.yang 
+      sysrepoctl -i ../yang/terastream-dhcp@2017-12-07.yang
 
 
 COPY uci/dhcp /etc/config/dhcp
@@ -192,8 +205,8 @@ RUN chmod +x /usr/libexec/rpcd/router.network
 RUN echo '#!/bin/sh' > /etc/init.d/network && chmod +x /etc/init.d/network
 RUN echo '#!/bin/sh' > /etc/init.d/odhcpd && chmod +x /etc/init.d/odhcpd
 
-# network plugin
-# remove default configuration from sysrepo
+## network plugin
+## remove default configuration from sysrepo
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/network-plugin.git && \
@@ -206,7 +219,7 @@ RUN \
       sysrepoctl -i ../yang/iana-if-type@2014-05-08.yang && \
       sysrepoctl -i ../yang/ietf-ip@2014-06-16.yang && \
       sysrepoctl -i ../yang/terastream-interfaces-opto@2017-09-27.yang && \
-      sysrepoctl -c ietf-ip -e ipv4-non-contiguous-netmasks 
+      sysrepoctl -c ietf-ip -e ipv4-non-contiguous-netmasks
 
 COPY uci/network /etc/config/network
 
@@ -222,16 +235,16 @@ RUN chmod +x /usr/libexec/rpcd/network.interface
 COPY ubus/router.net /usr/libexec/rpcd/router.net
 RUN chmod +x /usr/libexec/rpcd/router.net
 
-# OpenWrt replacement for router.net
+## OpenWrt replacement for router.net
 COPY command/ip /bin/ip
 RUN chmod +x /bin/ip
-# in plugin replace '/proc/net/arp' with '/tmp/arp' for testing
+## in plugin replace '/proc/net/arp' with '/tmp/arp' for testing
 COPY file/arp /tmp/arp
 
 COPY ubus/sfp.ddm /usr/libexec/rpcd/sfp.ddm
 RUN chmod +x /usr/libexec/rpcd/sfp.ddm
 
-# firmware plugin
+## firmware plugin
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/firmware-plugin.git && \
@@ -248,19 +261,19 @@ RUN \
       sysrepoctl -i ../yang/terastream-software@2017-11-01.yang && \
 	  sysrepoctl -c terastream-software -e software-credentials-password
 
-# ubus call juci.system
+## ubus call juci.system
 COPY ubus/juci.system /usr/libexec/rpcd/juci.system
 RUN chmod +x /usr/libexec/rpcd/juci.system
 
-# ubus call juci.sysupgrade
+## ubus call juci.sysupgrade
 COPY ubus/juci.sysupgrade /usr/libexec/rpcd/juci.sysupgrade
 RUN chmod +x /usr/libexec/rpcd/juci.sysupgrade
 
-# ubus call router.system
+## ubus call router.system
 COPY ubus/router.system /usr/libexec/rpcd/router.system
 run chmod +x /usr/libexec/rpcd/router.system
 
-# sip plugin
+## sip plugin
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/sip-plugin.git && \
@@ -281,7 +294,7 @@ RUN echo '#!/bin/sh' > /etc/init.d/voice_client && chmod +x /etc/init.d/voice_cl
 
 RUN echo '#!/bin/sh' > /etc/init.d/asterisk && chmod +x /etc/init.d/asterisk
 
-# provisioning plugin
+## provisioning plugin
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/provisioning-plugin.git && \
@@ -298,7 +311,7 @@ RUN chmod +x /usr/libexec/rpcd/router.system
 COPY ubus/system /usr/libexec/rpcd/system
 RUN chmod +x /usr/libexec/rpcd/system
 
-# wireless plugin
+## wireless plugin
 RUN \
       cd /opt/dev && \
       git clone https://github.com/sartura/wireless-plugin.git && \
