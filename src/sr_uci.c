@@ -796,7 +796,7 @@ int sr_uci_init_data(sr_ctx_t *ctx, const char *uci_config,
   }
 
   /* commit the changes to startup datastore */
-  rc = sr_apply_changes(ctx->startup_sess, 0);
+  rc = sr_apply_changes(ctx->startup_sess, 0, 0);
   CHECK_RET(rc, cleanup, "failed sr_apply_changes: %s", sr_strerror(rc));
 
   return rc;
@@ -821,7 +821,8 @@ int sync_datastores(sr_ctx_t *ctx) {
   /* check if the startup datastore is empty
    * by checking the output of sysrepocfg */
 
-  snprintf(datatstore_command, 128, "sysrepocfg -X -d startup -m %s", ctx->yang_model);
+  snprintf(datatstore_command, 128, "sysrepocfg -X -d startup -m %s",
+           ctx->yang_model);
 
   fp = popen(datatstore_command, "r");
   CHECK_NULL_MSG(fp, &rc, cleanup, "popen failed");
