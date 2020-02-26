@@ -98,7 +98,6 @@ RUN \
       cd /opt/dev && \
       git clone  git://git.openwrt.org/project/libubox.git && \
       cd libubox && mkdir build && cd build && \
-      git checkout fd57eea9f37e447814afbf934db626288aac23c4 && \
       cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Release" .. && \
       make -j2 && \
       make install
@@ -106,7 +105,7 @@ RUN \
 ## uci
 RUN \
       cd /opt/dev && \
-      git clone git://nbd.name/uci.git && \
+      git clone git://git.openwrt.org/project/uci.git && \
       cd uci && \
       cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE:String="Release" -DBUILD_LUA=ON . && \
       make -j2 && \
