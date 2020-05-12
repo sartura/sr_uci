@@ -32,5 +32,5 @@ include_directories(
 	${JSON-C_INCLUDE_DIR}
 )
 
-install(FILES ${HEADERS} DESTINATION include)
+install(FILES src/sr_uci.h DESTINATION include)
 install(TARGETS ${CMAKE_PROJECT_NAME} LIBRARY DESTINATION lib)
