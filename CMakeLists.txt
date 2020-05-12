@@ -1,43 +1,28 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
-PROJECT(sr_uci)
+cmake_minimum_required(VERSION 2.8)
+project(sr_uci C)
+
+include(CompileOptions.cmake)
+
+include_directories(${CMAKE_SOURCE_DIR}/src/)
+add_library(${PROJECT_NAME} MODULE src/sr_uci.c)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall")
-
-set(SOURCES
-	src/sr_uci.c)
-
-set(HEADERS
-	src/sr_uci.h)
-
-add_library(${CMAKE_PROJECT_NAME} MODULE ${SOURCES})
-
-# dependencies - sysrepo
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
 find_package(SYSREPO REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} ${SYSREPO_LIBRARIES})
-include_directories(${SYSREPO_INCLUDE_DIRS})
-
-# dependencies - libubox
-find_package(LIBUBOX REQUIRED)
-include_directories(${LIBUBOX_INCLUDE_DIR})
-target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBUBOX_LIBRARIES})
-
-# dependencies - libubus
-find_package(LIBUBUS REQUIRED)
-include_directories(${LIBUBUS_INCLUDE_DIR})
-target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBUBUS_LIBRARIES})
-
-# dependencies - uci
-find_package(UCI REQUIRED)
-include_directories(${UCI_INCLUDE_DIR})
-target_link_libraries(${CMAKE_PROJECT_NAME} ${UCI_LIBRARIES} ${CMAKE_DL_LIBS})
-
-# dependencies - json-c
 find_package(JSON-C REQUIRED)
-include_directories(${JSON-C_INCLUDE_DIR})
-target_link_libraries(${CMAKE_PROJECT_NAME} json-c)
+find_package(UCI REQUIRED)
+find_package(LIBUBUS REQUIRED)
+find_package(LIBUBOX REQUIRED)
+
+target_link_libraries(
+	${PROJECT_NAME}
+	${SYSREPO_LIBRARIES}
+	${JSON-C_LIBRARIES}
+	${UCI_LIBRARIES}
+	${LIBUBUS_LIBRARIES}
+	${LIBUBOX_LIBRARIES}
+)
 
 install(FILES ${HEADERS} DESTINATION include)
 install(TARGETS ${CMAKE_PROJECT_NAME} LIBRARY DESTINATION lib)
